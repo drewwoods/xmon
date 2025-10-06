@@ -338,6 +338,9 @@ static int resize_framebuf(unsigned int width, unsigned int height)
 static int mask_to_shift(unsigned int mask)
 {
 	int shift = 0;
+
+	if(!mask) return 0;
+
 	while(!(mask & 1)) {
 		mask >>= 1;
 		shift++;
