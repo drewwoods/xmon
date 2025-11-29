@@ -11,9 +11,10 @@
 #include "xmon.h"
 #include "sysmon.h"
 
-#define UPD_RATE_MS	350
+#define UPD_RATE_MS	250
 #define FONT_DESC	"-*-helvetica-bold-r-*-*-12-*"
 
+/* UI colors */
 enum {
 	COL_FG,
 	COL_BG,
@@ -21,6 +22,14 @@ enum {
 	COL_BGLO,
 
 	NUM_UICOLORS
+};
+
+/* UI element bits */
+enum {
+	UI_FRAME	= 1,
+	UI_CPU		= 2,
+
+	UI_ALL		= 0x7fff
 };
 
 typedef struct {
@@ -53,8 +62,9 @@ static XColor uicolor[NUM_UICOLORS] = {
 
 static XRectangle cpumon_rect;
 
+
 static void layout(void);
-static void draw_window(void);
+static void draw_window(unsigned int draw);
 static void draw_frame(int x, int y, int w, int h, int depth);
 static int create_window(const char *title, int width, int height);
 static void proc_event(XEvent *ev);
@@ -155,7 +165,7 @@ int main(int argc, char **argv)
 
 			cpumon_update();
 
-			draw_window();
+			draw_window(UI_CPU);
 		}
 	}
 
@@ -178,26 +188,34 @@ static void layout(void)
 	cpumon_resize(cpumon_rect.width, cpumon_rect.height);
 }
 
-static void draw_window(void)
+static void draw_window(unsigned int draw)
 {
 	int ypos;
 	char buf[256];
 
-	XClearWindow(dpy, win);
+	if(draw & UI_FRAME) {
+		XClearWindow(dpy, win);
+		draw_frame(0, 0, win_width, win_height, bevel);
+		draw_frame(cpumon_rect.x - bevel, cpumon_rect.y - bevel,
+				cpumon_rect.width + bevel * 2, cpumon_rect.height + bevel * 2,
+				-bevel);
+	}
 
-	draw_frame(0, 0, win_width, win_height, bevel);
-	draw_frame(cpumon_rect.x - bevel, cpumon_rect.y - bevel,
-			cpumon_rect.width + bevel * 2, cpumon_rect.height + bevel * 2,
-			-bevel);
+	if(draw & UI_CPU) {
+		ypos = cpumon_rect.y - bevel - font->descent - 2;
 
-	XSetForeground(dpy, gc, uicolor[COL_FG].pixel);
-	XSetBackground(dpy, gc, uicolor[COL_BG].pixel);
+		XSetForeground(dpy, gc, uicolor[COL_BG].pixel);
+		XFillRectangle(dpy, win, gc, cpumon_rect.x, ypos - font->ascent,
+				cpumon_rect.width, font_height);
 
-	ypos = cpumon_rect.y - bevel - font->descent - 2;
-	sprintf(buf, "CPU %3d%%", smon.single * 100 >> 7);
-	XDrawString(dpy, win, gc, cpumon_rect.x, ypos, buf, strlen(buf));
+		sprintf(buf, "CPU %3d%%", smon.single * 100 >> 7);
 
-	cpumon_draw();
+		XSetForeground(dpy, gc, uicolor[COL_FG].pixel);
+		XSetBackground(dpy, gc, uicolor[COL_BG].pixel);
+		XDrawString(dpy, win, gc, cpumon_rect.x, ypos, buf, strlen(buf));
+
+		cpumon_draw();
+	}
 
 	XFlush(dpy);
 }
@@ -314,7 +332,7 @@ static void proc_event(XEvent *ev)
 		if(!mapped || ev->xexpose.count > 0) {
 			break;
 		}
-		draw_window();
+		draw_window(UI_ALL);
 		break;
 
 	case MapNotify:
