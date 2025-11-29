@@ -5,7 +5,7 @@ obj = $(src:.c=.o)
 dep = $(src:.c=.d)
 bin = xmon
 
-CFLAGS = -std=gnu89 -pedantic -Wall -g -MMD
+CFLAGS = -std=gnu89 -pedantic -Wall -g -fcommon -MMD
 LDFLAGS = -lX11
 
 $(bin): $(obj)
