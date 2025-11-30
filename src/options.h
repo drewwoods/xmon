@@ -18,7 +18,7 @@ struct cpu_options {
 
 struct options {
 	int x, y, xsz, ysz;
-	int upd_rate;
+	int upd_interv;
 
 	struct vis_options vis;
 	struct cpu_options cpu;

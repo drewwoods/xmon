@@ -125,10 +125,10 @@ int main(int argc, char **argv)
 		xfd = ConnectionNumber(dpy);
 		FD_SET(xfd, &rdset);
 
-		if(dt >= opt.upd_rate) {
+		if(dt >= opt.upd_interv) {
 			tv.tv_sec = tv.tv_usec = 0;
 		} else {
-			long delay = opt.upd_rate - dt;
+			long delay = opt.upd_interv - dt;
 			tv.tv_sec = delay / 1000;
 			tv.tv_usec = (delay % 1000) * 1000;
 		}
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 		}
 
 		msec = get_msec();
-		if(msec - prev_upd >= opt.upd_rate) {
+		if(msec - prev_upd >= opt.upd_interv) {
 			prev_upd = msec;
 			sysmon_update();
 
