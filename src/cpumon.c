@@ -3,15 +3,15 @@
 #include <string.h>
 #include "xmon.h"
 #include "sysmon.h"
+#include "options.h"
 
-#define NUM_COLORS	16
 #define GRAD_COLORS	4
 
 struct color {
 	int r, g, b;
 };
 
-static XColor colors[NUM_COLORS];
+static XColor *colors;
 static unsigned char *fb;
 static XImage *ximg;
 static int rshift, gshift, bshift;
@@ -33,6 +33,14 @@ int cpumon_init(void)
 {
 	int i;
 
+	if(opt.cpu.ncolors <= 2) {
+		return -1;
+	}
+	if(!(colors = malloc(opt.cpu.ncolors * sizeof *colors))) {
+		fprintf(stderr, "CPU: failed to allocate array of %d colors\n", opt.cpu.ncolors);
+		return -1;
+	}
+
 	for(i=0; i<GRAD_COLORS; i++) {
 		struct color *col = grad + i;
 		col->r <<= 8;
@@ -43,15 +51,15 @@ int cpumon_init(void)
 		if(col->b & 0x100) col->b |= 0xff;
 	}
 
-	for(i=0; i<NUM_COLORS; i++) {
-		int seg = i * (GRAD_COLORS - 1) / NUM_COLORS;
-		int t = i * (GRAD_COLORS - 1) % NUM_COLORS;
+	for(i=0; i<opt.cpu.ncolors; i++) {
+		int seg = i * (GRAD_COLORS - 1) / opt.cpu.ncolors;
+		int t = i * (GRAD_COLORS - 1) % opt.cpu.ncolors;
 		struct color *c0 = grad + seg;
 		struct color *c1 = c0 + 1;
 
-		colors[i].red = c0->r + (c1->r - c0->r) * t / (NUM_COLORS - 1);
-		colors[i].green = c0->g + (c1->g - c0->g) * t / (NUM_COLORS - 1);
-		colors[i].blue = c0->b + (c1->b - c0->b) * t / (NUM_COLORS - 1);
+		colors[i].red = c0->r + (c1->r - c0->r) * t / (opt.cpu.ncolors - 1);
+		colors[i].green = c0->g + (c1->g - c0->g) * t / (opt.cpu.ncolors - 1);
+		colors[i].blue = c0->b + (c1->b - c0->b) * t / (opt.cpu.ncolors - 1);
 		if(!XAllocColor(dpy, cmap, colors + i)) {
 			fprintf(stderr, "failed to allocate color %d\n", i);
 		} else {
@@ -100,7 +108,7 @@ void cpumon_update(void)
 	case 8:
 		for(i=0; i<ximg->width; i++) {
 			cur = i * smon.num_cpus / ximg->width;
-			col0 = (smon.cpu[cur] * NUM_COLORS) >> 7;
+			col0 = (smon.cpu[cur] * opt.cpu.ncolors) >> 7;
 			*row++ = colors[col0].pixel;
 		}
 		break;
@@ -110,7 +118,7 @@ void cpumon_update(void)
 		for(i=0; i<ximg->width; i++) {
 			int r, g, b;
 			cur = i * smon.num_cpus / ximg->width;
-			col0 = (smon.cpu[cur] * NUM_COLORS) >> 7;
+			col0 = (smon.cpu[cur] * opt.cpu.ncolors) >> 7;
 
 			r = colors[col0].red >> 8;
 			g = colors[col0].green >> 8;

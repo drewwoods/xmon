@@ -4,3 +4,4 @@
 *.json
 xmon
 core
+.cache/

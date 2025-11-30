@@ -4,6 +4,16 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+/* UI colors */
+enum {
+	COL_FG,
+	COL_BG,
+	COL_BGHI,
+	COL_BGLO,
+
+	NUM_UICOLORS
+};
+
 Display *dpy;
 int scr;
 Window win, root;
