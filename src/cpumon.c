@@ -111,7 +111,7 @@ void cpumon_update(void)
 	unsigned char *row;
 	unsigned int *row32;
 
-	if(!ximg) return;
+	if(!ximg || !fb) return;
 
 	row_offs = (ximg->height - 1) * ximg->bytes_per_line;
 
@@ -154,8 +154,6 @@ void cpumon_draw(void)
 	int baseline;
 	char buf[128];
 
-	if(!ximg) return;
-
 	draw_frame(view_rect.x - BEVEL, view_rect.y - BEVEL, view_rect.width + BEVEL * 2,
 			view_rect.height + BEVEL * 2, -BEVEL);
 
@@ -168,8 +166,10 @@ void cpumon_draw(void)
 	XSetBackground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
 	XDrawString(dpy, win, gc, lb_rect.x, baseline, buf, strlen(buf));
 
-	XPutImage(dpy, win, gc, ximg, 0, 0, view_rect.x, view_rect.y, ximg->width,
-			ximg->height);
+	if(ximg && fb) {
+		XPutImage(dpy, win, gc, ximg, 0, 0, view_rect.x, view_rect.y, ximg->width,
+				ximg->height);
+	}
 }
 
 
@@ -188,8 +188,13 @@ static int resize_framebuf(int width, int height)
 		bshift = mask_to_shift(ximg->blue_mask);
 	}
 
-	printf("resizing framebuffer: %dx%d %d bpp\n", width, height, ximg->bits_per_pixel);
 	free(fb);
+	fb = 0;
+	ximg->data = 0;
+
+	if(width <= 0 || height <= 0) {
+		return -1;
+	}
 
 	pitch = width * ximg->bits_per_pixel;
 	if(!(fb = calloc(1, height * pitch))) {
