@@ -7,6 +7,8 @@
 
 #define GRAD_COLORS	4
 
+#define BEVEL	opt.vis.bevel_thick
+
 struct color {
 	int r, g, b;
 };
@@ -15,7 +17,7 @@ static XColor *colors;
 static unsigned char *fb;
 static XImage *ximg;
 static int rshift, gshift, bshift;
-static int xpos, ypos;
+static XRectangle rect, view_rect, lb_rect;
 
 struct color grad[GRAD_COLORS] = {
 	{5, 12, 80},
@@ -79,13 +81,28 @@ void cpumon_destroy(void)
 
 void cpumon_move(int x, int y)
 {
-	xpos = x;
-	ypos = y;
+	rect.x = x;
+	rect.y = y;
+
+	view_rect.x = rect.x + BEVEL;
+	view_rect.y = rect.y + BEVEL + font_height;
+
+	lb_rect.x = view_rect.x;
+	lb_rect.y = view_rect.y - BEVEL - font_height - 1;
 }
 
 void cpumon_resize(int x, int y)
 {
-	resize_framebuf(x, y);
+	rect.width = x;
+	rect.height = y;
+
+	view_rect.width = x - BEVEL * 2;
+	view_rect.height = y - BEVEL * 2 - font_height;
+
+	lb_rect.width = view_rect.width;
+	lb_rect.height = font_height;
+
+	resize_framebuf(view_rect.width, view_rect.height);
 }
 
 void cpumon_update(void)
@@ -134,9 +151,25 @@ void cpumon_update(void)
 
 void cpumon_draw(void)
 {
+	int baseline;
+	char buf[128];
+
 	if(!ximg) return;
 
-	XPutImage(dpy, win, gc, ximg, 0, 0, xpos, ypos, ximg->width, ximg->height);
+	draw_frame(view_rect.x - BEVEL, view_rect.y - BEVEL, view_rect.width + BEVEL * 2,
+			view_rect.height + BEVEL * 2, -BEVEL);
+
+	XSetForeground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
+	XFillRectangle(dpy, win, gc, lb_rect.x, lb_rect.y, lb_rect.width, lb_rect.height);
+
+	baseline = lb_rect.y + lb_rect.height - font->descent;
+	sprintf(buf, "CPU %3d%%", smon.single * 100 >> 7);
+	XSetForeground(dpy, gc, opt.vis.uicolor[COL_FG].pixel);
+	XSetBackground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
+	XDrawString(dpy, win, gc, lb_rect.x, baseline, buf, strlen(buf));
+
+	XPutImage(dpy, win, gc, ximg, 0, 0, view_rect.x, view_rect.y, ximg->width,
+			ximg->height);
 }
 
 

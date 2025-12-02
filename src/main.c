@@ -47,7 +47,6 @@ static XRectangle cpumon_rect;
 
 static void layout(void);
 static void draw_window(unsigned int draw);
-static void draw_frame(int x, int y, int w, int h, int depth);
 static int create_window(void);
 static void proc_event(XEvent *ev);
 static long get_msec(void);
@@ -66,7 +65,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	bevel = opt.vis.bevel_thick;
-	frm_width = opt.vis.frm_width + bevel * 2;
+	frm_width = opt.vis.frm_width + bevel;
 
 	if(sysmon_init() == -1) {
 		return 1;
@@ -164,10 +163,10 @@ int main(int argc, char **argv)
 static void layout(void)
 {
 	cpumon_rect.x = frm_width;
-	cpumon_rect.y = font_height + bevel * 2 + 4;
+	cpumon_rect.y = frm_width;
 	if(cpumon_rect.y < frm_width) cpumon_rect.y = frm_width;
 	cpumon_rect.width = win_width - frm_width * 2;
-	cpumon_rect.height = win_height - cpumon_rect.y - frm_width;
+	cpumon_rect.height = win_height - frm_width * 2;
 	if(cpumon_rect.height > cpumon_rect.width) {
 		cpumon_rect.height = cpumon_rect.width;
 	}
@@ -178,30 +177,12 @@ static void layout(void)
 
 static void draw_window(unsigned int draw)
 {
-	int ypos;
-	char buf[256];
-
 	if(draw & UI_FRAME) {
 		XClearWindow(dpy, win);
 		draw_frame(0, 0, win_width, win_height, bevel);
-		draw_frame(cpumon_rect.x - bevel, cpumon_rect.y - bevel,
-				cpumon_rect.width + bevel * 2, cpumon_rect.height + bevel * 2,
-				-bevel);
 	}
 
 	if(draw & UI_CPU) {
-		ypos = cpumon_rect.y - bevel - font->descent - 2;
-
-		XSetForeground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
-		XFillRectangle(dpy, win, gc, cpumon_rect.x, ypos - font->ascent,
-				cpumon_rect.width, font_height);
-
-		sprintf(buf, "CPU %3d%%", smon.single * 100 >> 7);
-
-		XSetForeground(dpy, gc, opt.vis.uicolor[COL_FG].pixel);
-		XSetBackground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
-		XDrawString(dpy, win, gc, cpumon_rect.x, ypos, buf, strlen(buf));
-
 		cpumon_draw();
 	}
 
@@ -214,7 +195,7 @@ static void point(XPoint *p, int x, int y)
 	p->y = y;
 }
 
-static void draw_frame(int x, int y, int w, int h, int depth)
+void draw_frame(int x, int y, int w, int h, int depth)
 {
 	int bevel;
 	XPoint v[4];
@@ -265,7 +246,7 @@ static void draw_frame(int x, int y, int w, int h, int depth)
 		point(v, x + w, y + h);
 		point(v + 1, x, y + h);
 		point(v + 2, x + bevel, y + h - bevel);
-		point(v + 3, x + h - bevel, y + h - bevel);
+		point(v + 3, x + w - bevel, y + h - bevel);
 		XFillPolygon(dpy, win, gc, v, 4, Convex, CoordModeOrigin);
 	}
 }
