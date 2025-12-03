@@ -48,6 +48,12 @@ void cpumon_resize(int x, int y);
 void cpumon_update(void);
 void cpumon_draw(void);
 
+int memmon_init(void);
+void memmon_destroy(void);
+void memmon_move(int x, int y);
+void memmon_resize(int x, int y);
+void memmon_draw(void);
+
 void draw_frame(int x, int y, int w, int h, int depth);
 
 #endif	/* XMON_H_ */

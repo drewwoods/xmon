@@ -18,7 +18,8 @@ static void calc_bevel_colors(void);
 void init_opt(void)
 {
 	opt.x = opt.y = 0;
-	opt.xsz = opt.ysz = 100;
+	opt.xsz = 100;
+	opt.ysz = 200;
 	opt.upd_interv = 250;
 
 	memcpy(opt.vis.uicolor, def_uicolor, sizeof opt.vis.uicolor);

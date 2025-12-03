@@ -6,8 +6,6 @@
 
 #define GRAD_COLORS	4
 
-#define BEVEL	opt.vis.bevel_thick
-
 struct color {
 	int r, g, b;
 };

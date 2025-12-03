@@ -31,4 +31,6 @@ void init_opt(void);
 int parse_args(int argc, char **argv);
 int read_config(const char *fname);
 
+#define BEVEL	opt.vis.bevel_thick
+
 #endif	/* OPTIONS_H_ */

@@ -42,7 +42,7 @@ static int bevel;
 static struct timeval tv0;
 
 
-static XRectangle cpumon_rect;
+static XRectangle cpu_rect, mem_rect, minrect;
 
 
 static void layout(void);
@@ -108,8 +108,12 @@ int main(int argc, char **argv)
 	if(cpumon_init() == -1) {
 		return 1;
 	}
+	if(memmon_init() == -1) {
+		return 1;
+	}
 
 	layout();
+	XResizeWindow(dpy, win, minrect.width, minrect.height);
 
 	XMapWindow(dpy, win);
 	XFlush(dpy);
@@ -168,17 +172,39 @@ int main(int argc, char **argv)
 
 static void layout(void)
 {
-	cpumon_rect.x = frm_width;
-	cpumon_rect.y = frm_width;
-	if(cpumon_rect.y < frm_width) cpumon_rect.y = frm_width;
-	cpumon_rect.width = win_width - frm_width * 2;
-	cpumon_rect.height = win_height - frm_width * 2;
-	if(cpumon_rect.height > cpumon_rect.width) {
-		cpumon_rect.height = cpumon_rect.width;
+	int y;
+	int all_x = frm_width;
+	int all_width = win_width - frm_width * 2;
+
+	y = frm_width;
+
+	/* CPU monitor */
+	cpu_rect.x = frm_width;
+	cpu_rect.y = y;
+	cpu_rect.width = all_width;
+	cpu_rect.height = all_width;
+	if(cpu_rect.height > cpu_rect.width) {
+		cpu_rect.height = cpu_rect.width;
 	}
 
-	cpumon_move(cpumon_rect.x, cpumon_rect.y);
-	cpumon_resize(cpumon_rect.width, cpumon_rect.height);
+	cpumon_move(cpu_rect.x, cpu_rect.y);
+	cpumon_resize(cpu_rect.width, cpu_rect.height);
+
+	y += cpu_rect.height + frm_width;
+
+	/* memory monitor */
+	mem_rect.x = all_x;
+	mem_rect.y = y;
+	mem_rect.width = all_width;
+	mem_rect.height = all_width / 2;
+
+	memmon_move(mem_rect.x, mem_rect.y);
+	memmon_resize(mem_rect.width, mem_rect.height);
+
+	y += mem_rect.height + frm_width;
+
+	minrect.width = win_width;
+	minrect.height = y;
 }
 
 static void draw_window(unsigned int draw)
@@ -192,6 +218,10 @@ static void draw_window(unsigned int draw)
 
 	if(draw & UI_CPU) {
 		cpumon_draw();
+	}
+
+	if(draw & UI_MEM) {
+		memmon_draw();
 	}
 
 	XFlush(dpy);
