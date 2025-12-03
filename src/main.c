@@ -111,6 +111,7 @@ int main(int argc, char **argv)
 	XMapWindow(dpy, win);
 	XFlush(dpy);
 
+	prev_upd = -opt.upd_interv;
 	gettimeofday(&tv0, 0);
 
 	while(!quit) {
