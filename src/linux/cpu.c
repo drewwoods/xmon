@@ -4,13 +4,11 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "sysmon.h"
+#include "xmon.h"
 
 struct cpustat {
 	unsigned long val[2][7];
 };
-
-struct sysmon smon;
 
 static FILE *fp;
 static struct cpustat *cpustat;
@@ -21,7 +19,7 @@ static int sbufsz;
 static int calc_usage(unsigned long *cval, unsigned long *pval);
 static int parse_cpustat(int cur);
 
-int sysmon_init(void)
+int cpu_init(void)
 {
 	char buf[256];
 
@@ -77,7 +75,7 @@ fail:
 	return -1;
 }
 
-void sysmon_update(void)
+void cpu_update(void)
 {
 	int i, nextupd;
 

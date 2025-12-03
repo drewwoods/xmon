@@ -9,13 +9,13 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include "xmon.h"
-#include "sysmon.h"
 #include "options.h"
 
 /* UI element bits */
 enum {
 	UI_FRAME	= 1,
 	UI_CPU		= 2,
+	UI_MEM		= 4,
 
 	UI_ALL		= 0x7fff
 };
@@ -67,7 +67,10 @@ int main(int argc, char **argv)
 	bevel = opt.vis.bevel_thick;
 	frm_width = opt.vis.frm_width + bevel;
 
-	if(sysmon_init() == -1) {
+	if(cpu_init() == -1) {
+		return 1;
+	}
+	if(mem_init() == -1) {
 		return 1;
 	}
 
@@ -149,11 +152,13 @@ int main(int argc, char **argv)
 		msec = get_msec();
 		if(msec - prev_upd >= opt.upd_interv) {
 			prev_upd = msec;
-			sysmon_update();
+
+			cpu_update();
+			mem_update();
 
 			cpumon_update();
 
-			draw_window(UI_CPU);
+			draw_window(UI_CPU | UI_MEM);
 		}
 	}
 

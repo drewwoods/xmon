@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "xmon.h"
-#include "sysmon.h"
 #include "options.h"
 
 #define GRAD_COLORS	4

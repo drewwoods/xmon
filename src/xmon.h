@@ -4,6 +4,14 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+struct sysmon {
+	int single;
+	int *cpu;
+	int num_cpus;
+
+	long mem_total, mem_free;
+};
+
 /* UI colors */
 enum {
 	COL_FG,
@@ -13,6 +21,8 @@ enum {
 
 	NUM_UICOLORS
 };
+
+struct sysmon smon;
 
 Display *dpy;
 int scr;
@@ -24,6 +34,12 @@ XFontStruct *font;
 int font_height;
 
 int quit;
+
+int cpu_init(void);
+int mem_init(void);
+
+void cpu_update(void);
+void mem_update(void);
 
 int cpumon_init(void);
 void cpumon_destroy(void);

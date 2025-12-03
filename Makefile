@@ -1,11 +1,11 @@
 PREFIX = /usr/local
 
-src = $(wildcard src/*.c)
+src = $(wildcard src/*.c) $(wildcard src/linux/*.c)
 obj = $(src:.c=.o)
 dep = $(src:.c=.d)
 bin = xmon
 
-CFLAGS = -std=gnu89 -pedantic -Wall -g -fcommon -MMD
+CFLAGS = -std=gnu89 -pedantic -Wall -g -Isrc -fcommon -MMD
 LDFLAGS = -lX11
 
 $(bin): $(obj)
