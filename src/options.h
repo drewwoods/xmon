@@ -24,7 +24,7 @@ struct options {
 	struct cpu_options cpu;
 };
 
-struct options opt;
+extern struct options opt;
 
 void init_opt(void);
 

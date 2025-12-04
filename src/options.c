@@ -5,6 +5,8 @@
 #include <errno.h>
 #include "options.h"
 
+struct options opt;
+
 static XColor def_uicolor[NUM_UICOLORS] = {
 	{0, 0, 0, 0},
 	{0, 0xb4b4, 0xb4b4, 0xb4b4},

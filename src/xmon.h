@@ -22,18 +22,18 @@ enum {
 	NUM_UICOLORS
 };
 
-struct sysmon smon;
+extern struct sysmon smon;
 
-Display *dpy;
-int scr;
-Window win, root;
-XVisualInfo *vinf;
-Colormap cmap;
-GC gc;
-XFontStruct *font;
-int font_height;
+extern Display *dpy;
+extern int scr;
+extern Window win, root;
+extern XVisualInfo *vinf;
+extern Colormap cmap;
+extern GC gc;
+extern XFontStruct *font;
+extern int font_height;
 
-int quit;
+extern int quit;
 
 int cpu_init(void);
 int mem_init(void);

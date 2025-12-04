@@ -1,11 +1,15 @@
 PREFIX = /usr/local
 
-src = $(wildcard src/*.c) $(wildcard src/linux/*.c)
+src_Linux = $(wildcard src/linux/*.c)
+src_IRIX = $(wildcard src/irix/*.c)
+src_IRIX64 = $(wildcard src/irix/*.c)
+
+src = $(wildcard src/*.c) $(src_$(shell uname -s))
 obj = $(src:.c=.o)
 dep = $(src:.c=.d)
 bin = xmon
 
-CFLAGS = -std=gnu89 -pedantic -Wall -g -Isrc -fcommon -MMD
+CFLAGS = -std=gnu89 -pedantic -Wall -g -Isrc -MMD
 LDFLAGS = -lX11
 
 $(bin): $(obj)

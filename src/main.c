@@ -31,6 +31,19 @@ typedef struct {
 #define MWM_HINTS_DECORATIONS	0x02
 #define MWM_DECOR_BORDER		0x02
 
+struct sysmon smon;
+
+Display *dpy;
+int scr;
+Window win, root;
+XVisualInfo *vinf;
+Colormap cmap;
+GC gc;
+XFontStruct *font;
+int font_height;
+
+int quit;
+
 static Atom xa_wm_proto, xa_wm_del;
 static Atom xa_mwm_hints;
 
