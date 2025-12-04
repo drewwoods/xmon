@@ -27,7 +27,7 @@ Other than the main experiment, my goals with this project are:
   - make it look nice, for multiple definitions of nice looks (see
     configurability above).
 
-Currently xmon supports Linux and IRIX.
+Currently xmon supports Linux, IRIX, and MacOS X.
 
 License
 -------
