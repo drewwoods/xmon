@@ -6,7 +6,7 @@
 
 struct sysmon {
 	int single;
-	int *cpu;
+	int *cpu;	/* CPU usage 0-127 */
 	int num_cpus;
 
 	long mem_total, mem_free;
