@@ -1,9 +1,9 @@
 xmon - graphical system monitor
 ===============================
 
-![xmon](http://nuclear.mutantstargoat.com/sw/xmon/img/xmon-shot001.png)
+![xmon](http://nuclear.mutantstargoat.com/sw/xmon/img/xmon-shot002.png)
 
-Project status: Prototyping / experiment stage.
+Project status: prototype/experiment.
 
 Xmon started as an experiment to find a good way to present CPU usage of more
 than a handful of cores. I was disappointed by existing system monitors which
@@ -27,6 +27,8 @@ Other than the main experiment, my goals with this project are:
   - make it look nice, for multiple definitions of nice looks (see
     configurability above).
 
+Currently xmon supports Linux and IRIX.
+
 License
 -------
 Copyright (C) 2025 John Tsiombikas <nuclear@mutantstargoat.com>
@@ -34,3 +36,16 @@ Copyright (C) 2025 John Tsiombikas <nuclear@mutantstargoat.com>
 Xmon is Free Software. Feel free to use, modify, and/or redistribute under the
 terms of the GNU General Public License v3, or at your option any later version
 published by the Free Software Foundation. See COPYING for details.
+
+Build instructions
+------------------
+
+### GNU/Linux
+Just run `make`, and optionally `make install` to install xmon system-wide. The
+default installation prefix is `/usr/local`, which can be changed by modifying
+the first line of `GNUmakefile`.
+
+### IRIX
+To build on IRIX, run `make -f Makefile.sgi`, and then `make -f Makefile.sgi
+install` if you wish to install xmon. Installation prefix can be changed by
+modifying the first line of `Makefile.sgi`.
