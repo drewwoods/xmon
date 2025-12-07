@@ -50,7 +50,7 @@ void draw_frame(int x, int y, int w, int h, int depth)
 	bevel = abs(depth);
 
 	if(bevel == 1) {
-		XSetLineAttributes(dpy, gc, bevel, LineSolid, CapButt, JoinBevel);
+		XSetLineAttributes(dpy, gc, 1, LineSolid, CapButt, JoinBevel);
 
 		point(v, x, y + h - 1);
 		point(v + 1, x, y);
@@ -125,4 +125,24 @@ void draw_bar(int x, int y, int w, int val, int total)
 		XSetForeground(dpy, gc, opt.vis.uicolor[COL_BGHI].pixel);
 	}
 	XFillRectangle(dpy, win, gc, x + BEVEL + bar, y, max_bar - bar, bar_thick);
+}
+
+void draw_sep(int x, int y, int w)
+{
+	int h = BEVEL * 2;
+	XPoint v[4];
+
+	XSetLineAttributes(dpy, gc, BEVEL, LineSolid, CapButt, JoinBevel);
+
+	point(v, x, y);
+	point(v + 1, x + w - BEVEL, y);
+
+	XSetForeground(dpy, gc, opt.vis.uicolor[COL_BGLO].pixel);
+	XDrawLines(dpy, win, gc, v, 2, CoordModeOrigin);
+
+	point(v, x + w - 1, y + h - BEVEL);
+	point(v + 1, x, y + h - BEVEL);
+
+	XSetForeground(dpy, gc, opt.vis.uicolor[COL_BGHI].pixel);
+	XDrawLines(dpy, win, gc, v, 2, CoordModeOrigin);
 }

@@ -5,9 +5,10 @@
 #include "xmon.h"
 
 enum {
-	MON_CPU		= 1,
-	MON_MEM		= 2,
-	MON_LOAD	= 4
+	MON_CPU		= 0x0001,
+	MON_MEM		= 0x0002,
+	MON_LOAD	= 0x0004,
+	MON_NET		= 0x0008
 };
 #define MON_ALL	0xffff
 

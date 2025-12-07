@@ -6,9 +6,6 @@
 /*static XColor col_bar = {0, 0x5000, 0x5000, 0xffff};*/
 static XRectangle rect;
 
-static int memfmt(char *buf, long mem);
-
-
 void memmon_move(int x, int y)
 {
 	rect.x = x;
@@ -19,6 +16,11 @@ void memmon_resize(int x, int y)
 {
 	rect.width = x;
 	rect.height = y;
+}
+
+int memmon_height(int w)
+{
+	return font_height * 2 + bar_height + 2;
 }
 
 void memmon_draw(void)
@@ -50,30 +52,9 @@ void memmon_draw(void)
 
 	y = baseline + font->descent + 1 + BEVEL;
 	draw_bar(rect.x, y, rect.width, used, smon.mem_total);
-#if 0
-	bar_thick = BEVEL * 2;
-	if(bar_thick < 4) bar_thick = 4;
-	max_bar = rect.width - BEVEL * 2;
-	bar = ratio * max_bar / 100;
-
-	draw_frame(rect.x, y, rect.width, bar_thick + 2 * BEVEL, -BEVEL);
-	y += BEVEL;
-
-	XSetForeground(dpy, gc, col_bar.pixel);
-	XFillRectangle(dpy, win, gc, rect.x + BEVEL, y, bar, bar_thick);
-
-	if(BEVEL) {
-		/* if we have bevels, the trough is visible just with the background color */
-		XSetForeground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
-	} else {
-		/* without bevels, let's paint it lighter */
-		XSetForeground(dpy, gc, opt.vis.uicolor[COL_BGHI].pixel);
-	}
-	XFillRectangle(dpy, win, gc, rect.x + BEVEL + bar, y, max_bar - bar, bar_thick);
-#endif
 }
 
-static int memfmt(char *buf, long mem)
+int memfmt(char *buf, long mem)
 {
 	int idx = 0;
 	int frac = 0;

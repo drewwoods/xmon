@@ -6,12 +6,12 @@
 
 static int has_memavail;
 
-static int match_field(const char *line, const char *name, long *retval);
+static int match_field(const char *line, const char *name, unsigned long *retval);
 
 int mem_init(void)
 {
 	char buf[256];
-	long val;
+	unsigned long val;
 	FILE *fp;
 
 	if(!(fp = fopen("/proc/meminfo", "rb"))) {
@@ -41,7 +41,7 @@ int mem_init(void)
 void mem_update(void)
 {
 	char buf[256];
-	long mfree, mcache;
+	unsigned long mfree, mcache;
 	FILE *fp;
 
 	if(!(fp = fopen("/proc/meminfo", "rb"))) {
@@ -71,7 +71,7 @@ void mem_update(void)
 	fclose(fp);
 }
 
-static int match_field(const char *line, const char *name, long *retval)
+static int match_field(const char *line, const char *name, unsigned long *retval)
 {
 	int len;
 	long val;

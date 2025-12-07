@@ -17,6 +17,7 @@ enum {
 	UI_CPU		= 0x0002,
 	UI_MEM		= 0x0004,
 	UI_LOAD		= 0x0008,
+	UI_NET		= 0x0010,
 
 	UI_ALL		= 0x7fff
 };
@@ -56,16 +57,17 @@ static int win_width, win_height;
 static int frm_width;	/* total with bevels */
 static int bevel;
 static unsigned int all_widgets;
+static unsigned int dirty;
 
 static struct timeval tv0;
 
 
 static XRectangle minrect;
-static XRectangle cpu_rect, mem_rect, load_rect;
+static XRectangle cpu_rect, mem_rect, load_rect, net_rect;
 
 
 static void layout(void);
-static void draw_window(unsigned int draw);
+static void draw_window(void);
 static int create_window(void);
 static void proc_event(XEvent *ev);
 static long get_msec(void);
@@ -97,6 +99,10 @@ int main(int argc, char **argv)
 		fprintf(stderr, "disabling load average display\n");
 		opt.mon &= ~MON_LOAD;
 	}
+	if((opt.mon & MON_NET) && net_init() == -1) {
+		fprintf(stderr, "disabling network traffic display\n");
+		opt.mon &= ~MON_NET;
+	}
 
 	if(!(dpy = XOpenDisplay(0))) {
 		fprintf(stderr, "failed to connect to the X server\n");
@@ -127,11 +133,15 @@ int main(int argc, char **argv)
 	if((opt.mon & MON_CPU) && cpumon_init() == -1) {
 		return 1;
 	}
+	if((opt.mon & MON_LOAD) && loadmon_init() == -1) {
+		return 1;
+	}
 
 	/* compute bitmask to redraw all enabled widgets */
 	if(opt.mon & MON_CPU) all_widgets |= UI_CPU;
 	if(opt.mon & MON_MEM) all_widgets |= UI_MEM;
 	if(opt.mon & MON_LOAD) all_widgets |= UI_LOAD;
+	if(opt.mon & MON_NET) all_widgets |= UI_NET;
 
 	XSetWindowBackground(dpy, win, opt.vis.uicolor[COL_BG].pixel);
 
@@ -190,8 +200,12 @@ int main(int argc, char **argv)
 			if(opt.mon & MON_LOAD) {
 				load_update();
 			}
+			if(opt.mon & MON_NET) {
+				net_update();
+			}
 
-			draw_window(all_widgets);
+			dirty |= all_widgets;
+			draw_window();
 		}
 	}
 
@@ -199,11 +213,13 @@ int main(int argc, char **argv)
 	return 0;
 }
 
+#define ALL_X		frm_width
+#define ALL_WIDTH	(win_width - frm_width * 2)
+#define SEPSZ		(frm_width * 2)
+
 static void layout(void)
 {
 	int y;
-	int all_x = frm_width;
-	int all_width = win_width - frm_width * 2;
 
 	y = frm_width;
 
@@ -211,66 +227,94 @@ static void layout(void)
 	if(opt.mon & MON_CPU) {
 		cpu_rect.x = frm_width;
 		cpu_rect.y = y;
-		cpu_rect.width = all_width;
-		cpu_rect.height = cpumon_height(all_width);
+		cpu_rect.width = ALL_WIDTH;
+		cpu_rect.height = cpumon_height(ALL_WIDTH);
 
 		cpumon_move(cpu_rect.x, cpu_rect.y);
 		cpumon_resize(cpu_rect.width, cpu_rect.height);
 
-		y += cpu_rect.height + frm_width;
+		y += cpu_rect.height + SEPSZ;
 	}
 
 	/* load average */
 	if(opt.mon & MON_LOAD) {
 		load_rect.x = frm_width;
 		load_rect.y = y;
-		load_rect.width = all_width;
-		load_rect.height = loadmon_height(all_width);
+		load_rect.width = ALL_WIDTH;
+		load_rect.height = loadmon_height(ALL_WIDTH);
 
 		loadmon_move(load_rect.x, load_rect.y);
 		loadmon_resize(load_rect.width, load_rect.height);
 
-		y += load_rect.height + frm_width;
+		y += load_rect.height + SEPSZ;
 	}
 
 	/* memory monitor */
 	if(opt.mon & MON_MEM) {
-		mem_rect.x = all_x;
+		mem_rect.x = ALL_X;
 		mem_rect.y = y;
-		mem_rect.width = all_width;
-		mem_rect.height = all_width / 2;
+		mem_rect.width = ALL_WIDTH;
+		mem_rect.height = memmon_height(ALL_WIDTH);
 
 		memmon_move(mem_rect.x, mem_rect.y);
 		memmon_resize(mem_rect.width, mem_rect.height);
 
-		y += mem_rect.height + frm_width;
+		y += mem_rect.height + SEPSZ;
+	}
+
+	/* network monitor */
+	if(opt.mon & MON_NET) {
+		net_rect.x = ALL_X;
+		net_rect.y = y;
+		net_rect.width = ALL_WIDTH;
+		net_rect.height = netmon_height(ALL_WIDTH);
+
+		netmon_move(net_rect.x, net_rect.y);
+		netmon_resize(net_rect.width, net_rect.height);
+
+		y += net_rect.height + SEPSZ;
 	}
 
 	minrect.width = win_width;
-	minrect.height = y;
+	minrect.height = y - SEPSZ + frm_width;
+
+	dirty = UI_ALL;
 }
 
-static void draw_window(unsigned int draw)
+#define DRAWSEP(y)	draw_sep(0, (y) - SEPSZ / 2, win_width)
+
+static void draw_window(void)
 {
-	if(draw & UI_FRAME) {
+	int n = 0;
+
+	if(dirty & UI_FRAME) {
 		XClearWindow(dpy, win);
 		if(!opt.vis.decor) {
 			draw_frame(0, 0, win_width, win_height, bevel);
 		}
 	}
 
-	if(draw & UI_CPU) {
+	if(dirty & UI_CPU) {
 		cpumon_draw();
+		n++;
 	}
 
-	if(draw & UI_LOAD) {
+	if(dirty & UI_LOAD) {
+		if(n++) DRAWSEP(load_rect.y);
 		loadmon_draw();
 	}
 
-	if(draw & UI_MEM) {
+	if(dirty & UI_MEM) {
+		if(n++) DRAWSEP(mem_rect.y);
 		memmon_draw();
 	}
 
+	if(dirty & UI_NET) {
+		if(n++) DRAWSEP(net_rect.y);
+		netmon_draw();
+	}
+
+	dirty = 0;
 	XFlush(dpy);
 }
 
@@ -331,7 +375,8 @@ static void proc_event(XEvent *ev)
 		if(!mapped || ev->xexpose.count > 0) {
 			break;
 		}
-		draw_window(UI_FRAME | all_widgets);
+		dirty = UI_ALL;
+		draw_window();
 		break;
 
 	case MapNotify:

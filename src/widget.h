@@ -21,5 +21,6 @@ int init_widgets(void);
 
 void draw_frame(int x, int y, int w, int h, int depth);
 void draw_bar(int x, int y, int w, int val, int total);
+void draw_sep(int x, int y, int w);
 
 #endif	/* WIDGET_H_ */

@@ -4,6 +4,13 @@
 #include "options.h"
 
 static XRectangle rect;
+static int bar_max;
+
+int loadmon_init(void)
+{
+	bar_max = smon.num_cpus << 7;
+	return 0;
+}
 
 void loadmon_move(int x, int y)
 {
@@ -39,5 +46,5 @@ void loadmon_draw(void)
 
 	y = baseline + font->descent + 1 + BEVEL;
 	val = (int)(smon.loadavg[0] * 1024.0);
-	draw_bar(rect.x, y, rect.width, val, 0x4000);
+	draw_bar(rect.x, y, rect.width, val, bar_max);
 }
