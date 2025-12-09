@@ -73,6 +73,7 @@ void netmon_resize(int x, int y);
 int netmon_height(int w);
 void netmon_draw(void);
 
-int memfmt(char *buf, long mem);		/* defined in memmon.c */
+long get_msec(void);					/* defined in main.c */
+int memfmt(char *buf, unsigned long mem, int baseu);  /* defined in memmon.c */
 
 #endif	/* XMON_H_ */

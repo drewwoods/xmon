@@ -70,7 +70,8 @@ static void layout(void);
 static void draw_window(void);
 static int create_window(void);
 static void proc_event(XEvent *ev);
-static long get_msec(void);
+
+long get_msec(void);
 
 
 int main(int argc, char **argv)
@@ -441,7 +442,7 @@ static void proc_event(XEvent *ev)
 	}
 }
 
-static long get_msec(void)
+long get_msec(void)
 {
 	struct timeval tv;
 

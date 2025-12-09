@@ -45,20 +45,20 @@ void memmon_draw(void)
 	baseline += font_height;
 
 	ptr = buf;
-	ptr += memfmt(ptr, used);
+	ptr += memfmt(ptr, used, 1);
 	strcpy(ptr, " / "); ptr += 3;
-	ptr += memfmt(ptr, smon.mem_total);
+	ptr += memfmt(ptr, smon.mem_total, 1);
 	XDrawString(dpy, win, gc, rect.x, baseline, buf, strlen(buf));
 
 	y = baseline + font->descent + 1 + BEVEL;
 	draw_bar(rect.x, y, rect.width, used, smon.mem_total);
 }
 
-int memfmt(char *buf, long mem)
+int memfmt(char *buf, unsigned long mem, int baseunit)
 {
-	int idx = 0;
+	int idx = baseunit;
 	int frac = 0;
-	static const char *suffix[] = {"k", "m", "g", "t", "p", 0};
+	static const char *suffix[] = {"b", "k", "m", "g", "t", "p", 0};
 
 	while(mem >= 1024 && suffix[idx + 1]) {
 		frac = mem & 1023;

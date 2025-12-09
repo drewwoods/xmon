@@ -4,6 +4,9 @@
 #include "options.h"
 
 static XRectangle rect;
+static unsigned int rx_acc, tx_acc;
+static unsigned int rx_rate, tx_rate;
+static long last_upd;
 
 int netmon_init(void)
 {
@@ -27,10 +30,31 @@ int netmon_height(int w)
 	return font_height * 3 + 2;
 }
 
+static void update(void)
+{
+	unsigned long msec, interv;
+
+	if(!opt.net.show_rate) return;
+
+	rx_acc += smon.net_rx;
+	tx_acc += smon.net_tx;
+
+	msec = get_msec();
+	interv = msec - last_upd;
+	if(!interv) return;
+
+	rx_rate = rx_acc * 1000 / interv;
+	tx_rate = tx_acc * 1000 / interv;
+	rx_acc = tx_acc = 0;
+	last_upd = msec;
+}
+
 void netmon_draw(void)
 {
-	char buf[128];
+	char tbuf[64], rbuf[64];
 	int baseline;
+
+	update();
 
 	baseline = rect.y + font_height - font->descent - 1;
 
@@ -44,13 +68,23 @@ void netmon_draw(void)
 
 	XSetForeground(dpy, gc, opt.vis.uicolor[COL_FG].pixel);
 
-	strcpy(buf, "Rx ");
-	memfmt(buf + 3, smon.net_rx);
-	XDrawString(dpy, win, gc, rect.x, baseline, buf, strlen(buf));
+	if(opt.net.show_rate) {
+		strcpy(rbuf, "Rx ");
+		memfmt(rbuf + 3, rx_rate, 0);
+		strcat(rbuf, "/s");
 
+		strcpy(tbuf, "Tx ");
+		memfmt(tbuf + 3, tx_rate, 0);
+		strcat(tbuf, "/s");
+	} else {
+		strcpy(rbuf, "Rx ");
+		memfmt(rbuf + 3, smon.net_rx, 0);
+
+		strcpy(tbuf, "Tx ");
+		memfmt(tbuf + 3, smon.net_tx, 0);
+	}
+
+	XDrawString(dpy, win, gc, rect.x, baseline, rbuf, strlen(rbuf));
 	baseline += font_height;
-
-	strcpy(buf, "Tx ");
-	memfmt(buf + 3, smon.net_tx);
-	XDrawString(dpy, win, gc, rect.x, baseline, buf, strlen(buf));
+	XDrawString(dpy, win, gc, rect.x, baseline, tbuf, strlen(tbuf));
 }

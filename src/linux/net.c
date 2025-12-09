@@ -53,8 +53,8 @@ void net_update(void)
 		if(endp == col[8]) continue;
 	}
 
-	smon.net_rx = cur_rx - prev_rx;
-	smon.net_tx = cur_tx - prev_tx;
+	smon.net_rx = prev_rx ? cur_rx - prev_rx : 0;
+	smon.net_tx = prev_tx ? cur_tx - prev_tx : 0;
 	prev_rx = cur_rx;
 	prev_tx = cur_tx;
 }

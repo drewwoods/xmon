@@ -33,6 +33,8 @@ void init_opt(void)
 	opt.vis.bevel_thick = 2;
 
 	opt.cpu.ncolors = 16;
+
+	opt.net.show_rate = 1;
 }
 
 static const char *usage_str[] = {
@@ -49,6 +51,7 @@ static const char *usage_str[] = {
 	" -bevel <pixels>: bevel thickness for the default UI look\n",
 	" -textcolor <r,g,b>: specify the text color\n",
 	" -bgcolor <r,g,b>: specify background color\n",
+	" -net-rate/-net-traf: show raw network traffic, or transfer rate per sec\n",
 	" -h/-help: print usage and exit\n",
 	0
 };
@@ -119,6 +122,11 @@ int parse_args(int argc, char **argv)
 					return -1;
 				}
 				calc_bevel_colors();
+
+			} else if(strcmp(argv[i], "-net-rate") == 0) {
+				opt.net.show_rate = 1;
+			} else if(strcmp(argv[i], "-net-traf") == 0) {
+				opt.net.show_rate = 0;
 
 			} else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0) {
 				for(j=0; usage_str[j]; j++) {
