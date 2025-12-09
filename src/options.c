@@ -33,8 +33,6 @@ void init_opt(void)
 	opt.vis.bevel_thick = 2;
 
 	opt.cpu.ncolors = 16;
-
-	opt.net.show_rate = 1;
 }
 
 static const char *usage_str[] = {
@@ -51,7 +49,6 @@ static const char *usage_str[] = {
 	" -bevel <pixels>: bevel thickness for the default UI look\n",
 	" -textcolor <r,g,b>: specify the text color\n",
 	" -bgcolor <r,g,b>: specify background color\n",
-	" -net-rate/-net-traf: show raw network traffic, or transfer rate per sec\n",
 	" -h/-help: print usage and exit\n",
 	0
 };
@@ -112,7 +109,7 @@ int parse_args(int argc, char **argv)
 
 			} else if(strcmp(argv[i], "-textcolor") == 0 || strcmp(argv[i], "-fgcolor") == 0) {
 				if(parse_color(argv[++i], opt.vis.uicolor + COL_FG) == -1) {
-					fprintf(stderr, "%s must be followed by a color\n", argv[-1]);
+					fprintf(stderr, "%s must be followed by a color\n", argv[i - 1]);
 					return -1;
 				}
 
@@ -122,11 +119,6 @@ int parse_args(int argc, char **argv)
 					return -1;
 				}
 				calc_bevel_colors();
-
-			} else if(strcmp(argv[i], "-net-rate") == 0) {
-				opt.net.show_rate = 1;
-			} else if(strcmp(argv[i], "-net-traf") == 0) {
-				opt.net.show_rate = 0;
 
 			} else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0) {
 				for(j=0; usage_str[j]; j++) {
@@ -176,7 +168,7 @@ static int parse_color(const char *str, XColor *col)
 
 	if(!str) return -1;
 
-	if(sscanf(str, "#%u", &packed) == 1) {
+	if(sscanf(str, "\#%u", &packed) == 1) {
 		r = (packed >> 16) & 0xff;
 		g = (packed >> 8) & 0xff;
 		b = packed & 0xff;

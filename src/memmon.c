@@ -58,7 +58,7 @@ int memfmt(char *buf, unsigned long mem, int baseunit)
 {
 	int idx = baseunit;
 	int frac = 0;
-	static const char *suffix[] = {"b", "k", "m", "g", "t", "p", 0};
+	static const char *suffix[] = {"B", "K", "M", "G", "T", "P", 0};
 
 	while(mem >= 1024 && suffix[idx + 1]) {
 		frac = mem & 1023;
@@ -69,5 +69,5 @@ int memfmt(char *buf, unsigned long mem, int baseunit)
 	frac = (frac * 1000) >> 10;
 	while(frac > 10) frac /= 10;
 
-	return sprintf(buf, "%ld.%d%s", mem, frac, suffix[idx]);
+	return sprintf(buf, "%ld.%d %s", mem, frac, suffix[idx]);
 }

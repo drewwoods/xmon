@@ -68,6 +68,7 @@ void loadmon_resize(int x, int y);
 int loadmon_height(int w);
 void loadmon_draw(void);
 
+int netmon_init(void);
 void netmon_move(int x, int y);
 void netmon_resize(int x, int y);
 int netmon_height(int w);

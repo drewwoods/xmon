@@ -137,6 +137,9 @@ int main(int argc, char **argv)
 	if((opt.mon & MON_LOAD) && loadmon_init() == -1) {
 		return 1;
 	}
+	if((opt.mon & MON_NET) && netmon_init() == -1) {
+		return 1;
+	}
 
 	/* compute bitmask to redraw all enabled widgets */
 	if(opt.mon & MON_CPU) all_widgets |= UI_CPU;
