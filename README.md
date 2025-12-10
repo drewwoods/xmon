@@ -1,7 +1,7 @@
 xmon - graphical system monitor
 ===============================
 
-![xmon](http://nuclear.mutantstargoat.com/sw/xmon/img/xmon-shot002.png)
+![xmon](http://nuclear.mutantstargoat.com/sw/xmon/img/xmon-shot003.png)
 
 Xmon is a simple graphical system monitoring utility for UNIX systems with X11.
 
