@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 	long prev_upd, msec, dt;
 
 	init_opt();
-	read_config("xmon.conf");
+	read_config();
 	if(parse_args(argc, argv) == -1) {
 		return 1;
 	}

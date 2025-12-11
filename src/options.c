@@ -3,6 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <unistd.h>
+#include <pwd.h>
 #include "options.h"
 
 struct options opt;
@@ -14,11 +16,21 @@ static XColor def_uicolor[NUM_UICOLORS] = {
 	{0, 0x6262, 0x6262, 0x6262}
 };
 
+/* these must match the order of the MON_* enums in options.h */
+static const char *monstr[] = {"cpu", "mem", "load", "net", 0};
+
+static const char *cfgpath[] = {"~/.config/xmon.conf", "~/.xmon.conf", "/etc/xmon.conf", 0};
+
+static int read_config_file(const char *fname, FILE *fp);
 static int parse_color(const char *str, XColor *col);
 static void calc_bevel_colors(void);
 
 void init_opt(void)
 {
+	int i;
+	char *path, *homedir = 0;
+	struct passwd *pw;
+
 	opt.x = opt.y = 0;
 	opt.xsz = 100;
 	opt.ysz = 200;
@@ -33,6 +45,27 @@ void init_opt(void)
 	opt.vis.bevel_thick = 2;
 
 	opt.cpu.ncolors = 16;
+
+	/* expand cfg paths */
+	if((pw = getpwuid(getuid()))) {
+		homedir = pw->pw_dir;
+	} else {
+		homedir = getenv("HOME");
+	}
+
+	if(homedir) {
+		for(i=0; cfgpath[i]; i++) {
+			if(cfgpath[i][0] == '~') {
+				if(!(path = malloc(strlen(cfgpath[i]) + strlen(homedir) + 1))) {
+					fprintf(stderr, "failed to allocate buffer for search path expansion\n");
+					continue;
+				}
+				strcpy(path, homedir);
+				strcat(path, cfgpath[i] + 1);
+				cfgpath[i] = path;
+			}
+		}
+	}
 }
 
 static const char *usage_str[] = {
@@ -59,9 +92,6 @@ int parse_args(int argc, char **argv)
 	unsigned int width, height, flags;
 	char buf[64];
 	char *endp;
-
-	/* these must match the order of the MON_* enums in options.h */
-	static const char *monsuffix[] = {"cpu", "mem", "load", 0};
 
 	for(i=1; i<argc; i++) {
 		if(argv[i][0] == '-') {
@@ -135,20 +165,20 @@ int parse_args(int argc, char **argv)
 
 			} else {
 				/* handle -cpu/-nocpu, -mem/-nomem ... etc */
-				for(j=0; monsuffix[j]; j++) {
-					sprintf(buf, "-%s", monsuffix[j]);
+				for(j=0; monstr[j]; j++) {
+					sprintf(buf, "-%s", monstr[j]);
 					if(strcmp(argv[i], buf) == 0) {
 						opt.mon |= 1 << j;
 						break;
 					}
-					sprintf(buf, "-no%s", monsuffix[j]);
+					sprintf(buf, "-no%s", monstr[j]);
 					if(strcmp(argv[i], buf) == 0) {
 						opt.mon &= ~(1 << j);
 						break;
 					}
 				}
 
-				if(monsuffix[j] == 0) {
+				if(monstr[j] == 0) {
 					/* went through all of the suffixes, it's not one of them */
 					fprintf(stderr, "unrecognized option: %s\n", argv[i]);
 					return -1;
@@ -164,9 +194,150 @@ int parse_args(int argc, char **argv)
 	return 0;
 }
 
-int read_config(const char *fname)
+int read_config(void)
 {
+	int i;
+	FILE *fp;
+
+	for(i=0; cfgpath[i]; i++) {
+		if((fp = fopen(cfgpath[i], "rb"))) {
+			return read_config_file(cfgpath[i], fp);
+		}
+	}
 	return -1;
+}
+
+static char *clean_line(char *s)
+{
+	char *endp;
+	while(*s && isspace(*s)) s++;
+	if(!*s) return 0;
+
+	endp = s;
+	while(*endp && *endp != '#') endp++;
+	*endp-- = 0;
+	while(endp > s && isspace(*endp)) {
+		*endp-- = 0;
+	}
+
+	return *s ? s : 0;
+}
+
+static int read_config_file(const char *fname, FILE *fp)
+{
+	char buf[256];
+	char *name, *valstr;
+	int i, val[3], boolval, lineno = 0;
+	int num_val;
+
+	if(!(fp = fopen(fname, "rb"))) {
+		return -1;
+	}
+
+	while(fgets(buf, sizeof buf, fp)) {
+		lineno++;
+		if(!(valstr = strchr(buf, ':'))) {
+			continue;
+		}
+		*valstr++ = 0;
+		if(!(name = clean_line(buf))) {
+			continue;
+		}
+		if(!(valstr = clean_line(valstr))) {
+			continue;
+		}
+
+		num_val = sscanf(valstr, "%d %d %d", val, val + 1, val + 2);
+		if(strcmp(valstr, "true") == 0 || strcmp(valstr, "yes") == 0 || strcmp(valstr, "on") == 0) {
+			boolval = 1;
+		} else if(strcmp(valstr, "false") == 0 || strcmp(valstr, "no") == 0 || strcmp(valstr, "off") == 0) {
+			boolval = 0;
+		}
+
+		if(strcmp(name, "size") == 0) {
+			if(sscanf(valstr, "%dx%d", val, val + 1) != 2) {
+				fprintf(stderr, "%s %d: invalid size, expected <width>x<height>\n",
+						fname, lineno);
+				continue;
+			}
+			opt.xsz = val[0];
+			opt.ysz = val[1];
+
+		} else if(strcmp(name, "position") == 0) {
+			if(sscanf(valstr, "%d %d", val, val + 1) != 2) {
+				fprintf(stderr, "%s %d: invalid position, expected <x> <y>\n", fname, lineno);
+				continue;
+			}
+			opt.x = val[0];
+			opt.y = val[1];
+
+		} else if(strcmp(name, "update") == 0) {
+			if(!(val[0] = atoi(valstr))) {
+				fprintf(stderr, "%s %d: invalid update, expected number of milliseconds\n",
+						fname, lineno);
+				continue;
+			}
+			opt.upd_interv = val[0];
+
+		} else if(strcmp(name, "enable") == 0) {
+			for(i=0; monstr[i]; i++) {
+				if(strstr(valstr, monstr[i])) {
+					opt.mon |= 1 << i;
+				}
+			}
+
+		} else if(strcmp(name, "disable") == 0) {
+			for(i=0; monstr[i]; i++) {
+				if(strstr(valstr, monstr[i])) {
+					opt.mon &= ~(1 << i);
+				}
+			}
+
+		} else if(strcmp(name, "font") == 0) {
+			opt.vis.font = strdup(valstr);
+
+		} else if(strcmp(name, "frame") == 0) {
+			if(!num_val) {
+				fprintf(stderr, "%s %d: invalid frame, expected thickness in pixels\n",
+						fname, lineno);
+				continue;
+			}
+			opt.vis.frm_width = val[0];
+
+		} else if(strcmp(name, "decor") == 0) {
+			if(boolval < 0) {
+				fprintf(stderr, "%s %d: invalid decor, expected boolean\n", fname, lineno);
+				continue;
+			}
+			opt.vis.decor = boolval;
+
+		} else if(strcmp(name, "bevel") == 0) {
+			if(!num_val) {
+				fprintf(stderr, "%s %d: invalid bevel, expected thickness\n", fname, lineno);
+				continue;
+			}
+			opt.vis.bevel_thick = val[0];
+
+		} else if(strcmp(name, "textcolor") == 0 || strcmp(name, "bgcolor") == 0) {
+			XColor col;
+			int cidx = name[0] == 't' ? COL_FG : COL_BG;
+			if(parse_color(valstr, &col) == -1) {
+				fprintf(stderr, "%s %d: invalid %s, expected <r>,<g>,<b>\n", fname,
+						lineno, name);
+				continue;
+			}
+
+			opt.vis.uicolor[cidx] = col;
+			calc_bevel_colors();
+
+		} else {
+			fprintf(stderr, "%s %d: ignoring unknown option: %s\n", fname, lineno, name);
+			continue;
+		}
+	}
+
+	fclose(fp);
+	return 0;
 }
 
 static int parse_color(const char *str, XColor *col)
@@ -175,18 +346,18 @@ static int parse_color(const char *str, XColor *col)
 
 	if(!str) return -1;
 
-	if(sscanf(str, "#%x", &packed) == 1) {
-		r = (packed >> 16) & 0xff;
-		g = (packed >> 8) & 0xff;
-		b = packed & 0xff;
-
+	if(sscanf(str, "%u,%u,%u", &r, &g, &b) == 3) {
 		col->red = r | (r << 8);
 		col->green = g | (g << 8);
 		col->blue = b | (b << 8);
 		return 0;
 	}
 
-	if(sscanf(str, "%u,%u,%u", &r, &g, &b) == 3) {
+	if(sscanf(str, "%x", &packed) == 1) {
+		r = (packed >> 16) & 0xff;
+		g = (packed >> 8) & 0xff;
+		b = packed & 0xff;
+
 		col->red = r | (r << 8);
 		col->green = g | (g << 8);
 		col->blue = b | (b << 8);

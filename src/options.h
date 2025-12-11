@@ -44,7 +44,7 @@ extern struct options opt;
 void init_opt(void);
 
 int parse_args(int argc, char **argv);
-int read_config(const char *fname);
+int read_config(void);
 
 #define BEVEL	opt.vis.bevel_thick
 
