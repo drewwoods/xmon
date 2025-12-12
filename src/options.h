@@ -1,7 +1,6 @@
 #ifndef OPTIONS_H_
 #define OPTIONS_H_
 
-#include <X11/Xlib.h>
 #include "xmon.h"
 
 enum {
@@ -13,7 +12,7 @@ enum {
 #define MON_ALL	0xffff
 
 struct vis_options {
-	XColor uicolor[NUM_UICOLORS];
+	struct color uicolor[NUM_UICOLORS];
 	const char *font;
 	int frm_width;
 	int decor, bevel_thick;

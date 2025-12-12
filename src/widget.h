@@ -13,8 +13,7 @@ enum {
 	NUM_UICOLORS
 };
 
-extern XFontStruct *font;
-extern int font_height;
+extern unsigned int uicolor[NUM_UICOLORS];
 extern int bar_height;
 
 int init_widgets(void);

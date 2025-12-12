@@ -3,9 +3,9 @@ PREFIX = /usr/local
 sys = $(shell uname -s | sed 's/IRIX.*/IRIX/')
 
 # -- platform source files --
-src_Linux = $(wildcard src/linux/*.c)
-src_IRIX = $(wildcard src/irix/*.c)
-src_Darwin = $(wildcard src/darwin/*.c)
+src_Linux = $(wildcard src/linux/*.c) $(wildcard src/x11/*.c)
+src_IRIX = $(wildcard src/irix/*.c) $(wildcard src/x11/*.c)
+src_Darwin = $(wildcard src/darwin/*.c) $(wildcard src/x11/*.c)
 
 # -- platform flags --
 CFLAGS_Darwin = -I/opt/X11/include

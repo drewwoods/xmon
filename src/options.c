@@ -3,26 +3,32 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#if defined(unix) || defined(__unix)
 #include <unistd.h>
 #include <pwd.h>
+#endif
 #include "options.h"
 
 struct options opt;
 
-static XColor def_uicolor[NUM_UICOLORS] = {
-	{0, 0, 0, 0},
-	{0, 0xb4b4, 0xb4b4, 0xb4b4},
-	{0, 0xdfdf, 0xdfdf, 0xdfdf},
-	{0, 0x6262, 0x6262, 0x6262}
+static struct color def_uicolor[NUM_UICOLORS] = {
+	{0, 0, 0},
+	{0xb4, 0xb4, 0xb4},
+	{0xdf, 0xdf, 0xdf},
+	{0x62, 0x62, 0x62}
 };
 
 /* these must match the order of the MON_* enums in options.h */
 static const char *monstr[] = {"cpu", "mem", "load", "net", 0};
 
+#if defined(unix) || defined(__unix)
 static const char *cfgpath[] = {"~/.config/xmon.conf", "~/.xmon.conf", "/etc/xmon.conf", 0};
+#else
+static const char *cfgpath[] = {"xmon.conf", 0};
+#endif
 
 static int read_config_file(const char *fname, FILE *fp);
-static int parse_color(const char *str, XColor *col);
+static int parse_color(const char *str, struct color *col);
 static void calc_bevel_colors(void);
 
 void init_opt(void)
@@ -47,6 +53,7 @@ void init_opt(void)
 	opt.cpu.ncolors = 16;
 
 	/* expand cfg paths */
+#if defined(unix) || defined(__unix)
 	if((pw = getpwuid(getuid()))) {
 		homedir = pw->pw_dir;
 	} else {
@@ -66,12 +73,14 @@ void init_opt(void)
 			}
 		}
 	}
+#endif
 }
 
 static const char *usage_str[] = {
 	"Usage: %s [options]\n",
 	"Options:\n",
-	" -geometry <width>x<height>+<x>+<y>: specify window geometry\n",
+	" -size <width>x<height>: specify window size\n",
+	" -pos <X>x<Y>: specify window position\n",
 	" -update <interval>: update interval in milliseconds\n",
 	" -cpu/-nocpu: enable/disable CPU usage display\n",
 	" -load/-noload: enable/disable load average display\n",
@@ -88,22 +97,28 @@ static const char *usage_str[] = {
 
 int parse_args(int argc, char **argv)
 {
-	int i, j, x, y;
-	unsigned int width, height, flags;
+	int i, j, x, y, num;
+	unsigned int width, height;
 	char buf[64];
 	char *endp;
 
 	for(i=1; i<argc; i++) {
 		if(argv[i][0] == '-') {
-			if(strcmp(argv[i], "-geometry") == 0) {
-				if(!argv[++i] || !(flags = XParseGeometry(argv[i], &x, &y, &width, &height))) {
-					fprintf(stderr, "-geometry must be followed by WxH+X+Y\n");
+			if(strcmp(argv[i], "-size") == 0) {
+				if(!argv[++i] || (num = sscanf(argv[i], "%ux%u", &width, &height)) <= 0) {
+					fprintf(stderr, "-size must be followed by WxH\n");
 					return -1;
 				}
-				if(flags & XValue) opt.x = x;
-				if(flags & YValue) opt.y = y;
-				if(flags & WidthValue) opt.xsz = width;
-				if(flags & HeightValue) opt.ysz = height;
+				opt.xsz = width;
+				if(num > 1) opt.ysz = height;
+
+			} else if(strcmp(argv[i], "-pos") == 0) {
+				if(!argv[++i] || (num = sscanf(argv[i], "%d,%d", &x, &y)) <= 0) {
+					fprintf(stderr, "-pos must be followed by X,Y\n");
+					return -1;
+				}
+				opt.x = x;
+				if(num > 1) opt.y = y;
 
 			} else if(strcmp(argv[i], "-update") == 0) {
 				if(!argv[++i] || (opt.upd_interv = atoi(argv[i])) <= 0) {
@@ -319,7 +334,7 @@ static int read_config_file(const char *fname, FILE *fp)
 			opt.vis.bevel_thick = val[0];
 
 		} else if(strcmp(name, "textcolor") == 0 || strcmp(name, "bgcolor") == 0) {
-			XColor col;
+			struct color col;
 			int cidx = name[0] == 't' ? COL_FG : COL_BG;
 			if(parse_color(valstr, &col) == -1) {
 				fprintf(stderr, "%s %d: invalid %s, expected <r>,<g>,<b>\n", fname,
@@ -340,16 +355,16 @@ static int read_config_file(const char *fname, FILE *fp)
 	return 0;
 }
 
-static int parse_color(const char *str, XColor *col)
+static int parse_color(const char *str, struct color *col)
 {
 	unsigned int packed, r, g, b;
 
 	if(!str) return -1;
 
 	if(sscanf(str, "%u,%u,%u", &r, &g, &b) == 3) {
-		col->red = r | (r << 8);
-		col->green = g | (g << 8);
-		col->blue = b | (b << 8);
+		col->r = r | (r << 8);
+		col->g = g | (g << 8);
+		col->b = b | (b << 8);
 		return 0;
 	}
 
@@ -358,9 +373,9 @@ static int parse_color(const char *str, XColor *col)
 		g = (packed >> 8) & 0xff;
 		b = packed & 0xff;
 
-		col->red = r | (r << 8);
-		col->green = g | (g << 8);
-		col->blue = b | (b << 8);
+		col->r = r | (r << 8);
+		col->g = g | (g << 8);
+		col->b = b | (b << 8);
 		return 0;
 	}
 
@@ -370,21 +385,21 @@ static int parse_color(const char *str, XColor *col)
 static void calc_bevel_colors(void)
 {
 	unsigned int rr, gg, bb;
-	unsigned int r = opt.vis.uicolor[COL_BG].red;
-	unsigned int g = opt.vis.uicolor[COL_BG].green;
-	unsigned int b = opt.vis.uicolor[COL_BG].blue;
+	unsigned int r = opt.vis.uicolor[COL_BG].r;
+	unsigned int g = opt.vis.uicolor[COL_BG].g;
+	unsigned int b = opt.vis.uicolor[COL_BG].b;
 
 	rr = r * 5 / 4;
 	gg = g * 5 / 4;
 	bb = b * 5 / 4;
-	opt.vis.uicolor[COL_BGHI].red = rr;
-	opt.vis.uicolor[COL_BGHI].green = gg;
-	opt.vis.uicolor[COL_BGHI].blue = bb;
+	opt.vis.uicolor[COL_BGHI].r = rr;
+	opt.vis.uicolor[COL_BGHI].g = gg;
+	opt.vis.uicolor[COL_BGHI].b = bb;
 
 	rr = r * 3 / 5;
 	gg = g * 3 / 5;
 	bb = b * 3 / 5;
-	opt.vis.uicolor[COL_BGLO].red = rr;
-	opt.vis.uicolor[COL_BGLO].green = gg;
-	opt.vis.uicolor[COL_BGLO].blue = bb;
+	opt.vis.uicolor[COL_BGLO].r = rr;
+	opt.vis.uicolor[COL_BGLO].g = gg;
+	opt.vis.uicolor[COL_BGLO].b = bb;
 }

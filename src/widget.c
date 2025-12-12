@@ -4,28 +4,21 @@
 #include "xmon.h"
 #include "options.h"
 
-XFontStruct *font;
-int font_height;
+unsigned int uicolor[NUM_UICOLORS];
 int bar_height;
 
-static XColor col_bar = {0, 0x5000, 0x5000, 0xffff};
+static unsigned int col_bar;
 
 int init_widgets(void)
 {
 	int i, bar_thick;
 
-	if(!(font = XLoadQueryFont(dpy, opt.vis.font))) {
-		fprintf(stderr, "failed to load font: %s\n", opt.vis.font);
-		return 1;
-	}
-	font_height = font->ascent + font->descent;
-	XSetFont(dpy, gc, font->fid);
-
 	for(i=0; i<NUM_UICOLORS; i++) {
-		XAllocColor(dpy, cmap, opt.vis.uicolor + i);
+		uicolor[i] = alloc_color(opt.vis.uicolor[i].r, opt.vis.uicolor[i].g,
+				opt.vis.uicolor[i].b);
 	}
 
-	XAllocColor(dpy, cmap, &col_bar);
+	col_bar = alloc_color(0x50, 0x50, 0xff);
 
 	bar_thick = BEVEL * 2;
 	if(bar_thick < 4) bar_thick = 4;
@@ -34,7 +27,7 @@ int init_widgets(void)
 }
 
 
-static void point(XPoint *p, int x, int y)
+static void point(struct point *p, int x, int y)
 {
 	p->x = x;
 	p->y = y;
@@ -43,15 +36,14 @@ static void point(XPoint *p, int x, int y)
 void draw_frame(int x, int y, int w, int h, int depth)
 {
 	int bevel;
-	XPoint v[4];
+	struct point v[4];
 
 	if(depth == 0) return;
 
 	bevel = abs(depth);
 
 	if(bevel == 1) {
-		XSetLineAttributes(dpy, gc, 1, LineSolid, CapButt, JoinBevel);
-
+		/*
 		point(v, x, y + h - 1);
 		point(v + 1, x, y);
 		point(v + 2, x + w - 1, y);
@@ -65,34 +57,35 @@ void draw_frame(int x, int y, int w, int h, int depth)
 
 		XSetForeground(dpy, gc, opt.vis.uicolor[depth > 0 ? COL_BGLO : COL_BGHI].pixel);
 		XDrawLines(dpy, win, gc, v, 3, CoordModeOrigin);
+		*/
 	} else {
-		XSetForeground(dpy, gc, opt.vis.uicolor[depth > 0 ? COL_BGHI : COL_BGLO].pixel);
+		set_color(uicolor[depth > 0 ? COL_BGHI : COL_BGLO]);
 
 		point(v, x, y);
 		point(v + 1, x + bevel, y + bevel);
 		point(v + 2, x + bevel, y + h - bevel);
 		point(v + 3, x, y + h);
-		XFillPolygon(dpy, win, gc, v, 4, Convex, CoordModeOrigin);
+		draw_poly(v, 4);
 
 		point(v, x, y);
 		point(v + 1, x + w, y);
 		point(v + 2, x + w - bevel, y + bevel);
 		point(v + 3, x + bevel, y + bevel);
-		XFillPolygon(dpy, win, gc, v, 4, Convex, CoordModeOrigin);
+		draw_poly(v, 4);
 
-		XSetForeground(dpy, gc, opt.vis.uicolor[depth > 0 ? COL_BGLO : COL_BGHI].pixel);
+		set_color(uicolor[depth > 0 ? COL_BGLO : COL_BGHI]);
 
 		point(v, x + w, y);
 		point(v + 1, x + w, y + h);
 		point(v + 2, x + w - bevel, y + h - bevel);
 		point(v + 3, x + w - bevel, y + bevel);
-		XFillPolygon(dpy, win, gc, v, 4, Convex, CoordModeOrigin);
+		draw_poly(v, 4);
 
 		point(v, x + w, y + h);
 		point(v + 1, x, y + h);
 		point(v + 2, x + bevel, y + h - bevel);
 		point(v + 3, x + w - bevel, y + h - bevel);
-		XFillPolygon(dpy, win, gc, v, 4, Convex, CoordModeOrigin);
+		draw_poly(v, 4);
 	}
 }
 
@@ -114,35 +107,23 @@ void draw_bar(int x, int y, int w, int val, int total)
 	draw_frame(x, y, w, bar_height, -BEVEL);
 	y += BEVEL;
 
-	XSetForeground(dpy, gc, col_bar.pixel);
-	XFillRectangle(dpy, win, gc, x + BEVEL, y, bar, bar_thick);
+	set_color(col_bar);
+	draw_rect(x + BEVEL, y, bar, bar_thick);
 
 	if(BEVEL) {
 		/* if we have bevels, the trough is visible just with the background color */
-		XSetForeground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
+		set_color(uicolor[COL_BG]);
 	} else {
 		/* without bevels, let's paint it lighter */
-		XSetForeground(dpy, gc, opt.vis.uicolor[COL_BGHI].pixel);
+		set_color(uicolor[COL_BGHI]);
 	}
-	XFillRectangle(dpy, win, gc, x + BEVEL + bar, y, max_bar - bar, bar_thick);
+	draw_rect(x + BEVEL + bar, y, max_bar - bar, bar_thick);
 }
 
 void draw_sep(int x, int y, int w)
 {
-	int h = BEVEL * 2;
-	XPoint v[4];
-
-	XSetLineAttributes(dpy, gc, BEVEL, LineSolid, CapButt, JoinBevel);
-
-	point(v, x, y);
-	point(v + 1, x + w - BEVEL, y);
-
-	XSetForeground(dpy, gc, opt.vis.uicolor[COL_BGLO].pixel);
-	XDrawLines(dpy, win, gc, v, 2, CoordModeOrigin);
-
-	point(v, x + w - 1, y + h - BEVEL);
-	point(v + 1, x, y + h - BEVEL);
-
-	XSetForeground(dpy, gc, opt.vis.uicolor[COL_BGHI].pixel);
-	XDrawLines(dpy, win, gc, v, 2, CoordModeOrigin);
+	set_color(uicolor[COL_BGLO]);
+	draw_rect(x, y - BEVEL, w, BEVEL);
+	set_color(uicolor[COL_BGHI]);
+	draw_rect(x, y, w, BEVEL);
 }

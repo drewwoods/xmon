@@ -4,7 +4,7 @@
 #include "xmon.h"
 #include "options.h"
 
-static XRectangle rect;
+static struct rect rect;
 static unsigned int rx_acc, tx_acc;
 static unsigned int rx_rate, tx_rate;
 static unsigned int plot_max;
@@ -12,11 +12,9 @@ static long last_upd;
 static unsigned int plot_width, plot_height;
 static unsigned int plot_start, plot_end;		/* ring buffer indices */
 static struct { unsigned int rx, tx; } *plot;
-static XRectangle *rx_bars, *tx_bars, *both_bars;
+static struct rect *rx_bars, *tx_bars, *both_bars;
 
-static XColor col_rx = {0, 0x5050, 0x5050, 0xffff};
-static XColor col_tx = {0, 0xffff, 0x5050, 0x5050};
-static XColor col_both = {0, 0xc7c7, 0x5050, 0xffff};
+static unsigned int col_rx, col_tx, col_both;
 
 #define ADV(x) \
 	do { \
@@ -27,9 +25,9 @@ int netmon_init(void)
 {
 	plot_max = 1;
 
-	XAllocColor(dpy, cmap, &col_rx);
-	XAllocColor(dpy, cmap, &col_tx);
-	XAllocColor(dpy, cmap, &col_both);
+	col_rx = alloc_color(0x50, 0x50, 0xff);
+	col_tx = alloc_color(0xff, 0x50, 0x50);
+	col_both = alloc_color(0xc7, 0x50, 0xff);
 
 	return 0;
 }
@@ -71,7 +69,7 @@ void netmon_resize(int x, int y)
 int netmon_height(int w)
 {
 	plot_height = w / 2;
-	return font_height * 3 + plot_height + BEVEL * 2;
+	return font.height * 3 + plot_height + BEVEL * 2;
 }
 
 void netmon_draw(void)
@@ -80,7 +78,7 @@ void netmon_draw(void)
 	int x, y, baseline;
 	unsigned int rval, tval, bval, idx, bar_x;
 	unsigned long msec, interv;
-	XRectangle *rbar, *tbar, *bbar;
+	struct rect *rbar, *tbar, *bbar;
 
 	if(!plot) return;
 
@@ -114,33 +112,33 @@ void netmon_draw(void)
 	ADV(plot_end);
 	if(plot_end == plot_start) ADV(plot_start);
 
-	baseline = rect.y + font_height - font->descent - 1;
+	baseline = rect.y + font.height - font.descent - 1;
 
-	XSetForeground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
-	XFillRectangle(dpy, win, gc, rect.x, rect.y, rect.width, font_height * 3);
+	set_color(uicolor[COL_BG]);
+	draw_rect(rect.x, rect.y, rect.width, font.height * 3);
 
-	XSetForeground(dpy, gc, opt.vis.uicolor[COL_FG].pixel);
+	set_color(uicolor[COL_FG]);
 	if(opt.net.ifname) {
 		sprintf(buf, "NET: %s", opt.net.ifname);
-		XDrawString(dpy, win, gc, rect.x, baseline, buf, strlen(buf));
+		draw_text(rect.x, baseline, buf);
 	} else {
-		XDrawString(dpy, win, gc, rect.x, baseline, "NET", 3);
+		draw_text(rect.x, baseline, "NET");
 	}
 
-	baseline += font_height;
+	baseline += font.height;
 
-	XSetForeground(dpy, gc, opt.vis.uicolor[COL_FG].pixel);
+	set_color(uicolor[COL_FG]);
 
-	y = baseline - font->ascent;
-	XDrawString(dpy, win, gc, rect.x + 4, baseline, rbuf, strlen(rbuf));
-	baseline += font_height;
-	XDrawString(dpy, win, gc, rect.x + 4, baseline, tbuf, strlen(tbuf));
+	y = baseline - font.ascent;
+	draw_text(rect.x + 4, baseline, rbuf);
+	baseline += font.height;
+	draw_text(rect.x + 4, baseline, tbuf);
 
-	XSetForeground(dpy, gc, col_rx.pixel);
-	XFillRectangle(dpy, win, gc, rect.x, y + 2, 3, font->ascent - 2);
-	y += font_height;
-	XSetForeground(dpy, gc, col_tx.pixel);
-	XFillRectangle(dpy, win, gc, rect.x, y + 2, 3, font->ascent - 2);
+	set_color(col_rx);
+	draw_rect(rect.x, y + 2, 3, font.ascent - 2);
+	y += font.height;
+	set_color(col_tx);
+	draw_rect(rect.x, y + 2, 3, font.ascent - 2);
 
 
 	/* plot */
@@ -149,13 +147,13 @@ void netmon_draw(void)
 	if(tval > plot_max) plot_max = tval;
 
 	x = rect.x;
-	y = baseline + font->descent;
+	y = baseline + font.descent;
 	draw_frame(x, y, rect.width, plot_height + BEVEL * 2, -BEVEL);
 
 	x += BEVEL;
 	y += BEVEL;
-	XSetForeground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
-	XFillRectangle(dpy, win, gc, x, y, plot_width, plot_height);
+	set_color(uicolor[COL_BG]);
+	draw_rect(x, y, plot_width, plot_height);
 
 	if(plot_end == plot_start) return;
 
@@ -192,15 +190,15 @@ void netmon_draw(void)
 	} while(idx != plot_start);
 
 	if(bbar != both_bars) {
-		XSetForeground(dpy, gc, col_both.pixel);
-		XFillRectangles(dpy, win, gc, both_bars, bbar - both_bars);
+		set_color(col_both);
+		draw_rects(both_bars, bbar - both_bars);
 	}
 	if(rbar != rx_bars) {
-		XSetForeground(dpy, gc, col_rx.pixel);
-		XFillRectangles(dpy, win, gc, rx_bars, rbar - rx_bars);
+		set_color(col_rx);
+		draw_rects(rx_bars, rbar - rx_bars);
 	}
 	if(tbar != tx_bars) {
-		XSetForeground(dpy, gc, col_tx.pixel);
-		XFillRectangles(dpy, win, gc, tx_bars, tbar - tx_bars);
+		set_color(col_tx);
+		draw_rects(tx_bars, tbar - tx_bars);
 	}
 }

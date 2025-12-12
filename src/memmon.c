@@ -4,7 +4,7 @@
 #include "options.h"
 
 /*static XColor col_bar = {0, 0x5000, 0x5000, 0xffff};*/
-static XRectangle rect;
+static struct rect rect;
 
 void memmon_move(int x, int y)
 {
@@ -20,7 +20,7 @@ void memmon_resize(int x, int y)
 
 int memmon_height(int w)
 {
-	return font_height * 2 + bar_height + 2;
+	return font.height * 2 + bar_height + 2;
 }
 
 void memmon_draw(void)
@@ -31,26 +31,26 @@ void memmon_draw(void)
 
 	if(smon.mem_total <= 0) return;
 
-	XSetForeground(dpy, gc, opt.vis.uicolor[COL_BG].pixel);
-	XFillRectangle(dpy, win, gc, rect.x, rect.y, rect.width, font_height * 2);
+	set_color(uicolor[COL_BG]);
+	draw_rect(rect.x, rect.y, rect.width, font.height * 2);
 
 	used = smon.mem_total - smon.mem_free;
 	ratio = used * 100 / smon.mem_total;
-	baseline = rect.y + font_height - font->descent - 1;
+	baseline = rect.y + font.height - font.descent - 1;
 
-	XSetForeground(dpy, gc, opt.vis.uicolor[COL_FG].pixel);
+	set_color(uicolor[COL_FG]);
 
 	sprintf(buf, "MEM %3ld%%", ratio);
-	XDrawString(dpy, win, gc, rect.x, baseline, buf, strlen(buf));
-	baseline += font_height;
+	draw_text(rect.x, baseline, buf);
+	baseline += font.height;
 
 	ptr = buf;
 	ptr += memfmt(ptr, used, 1);
 	strcpy(ptr, " / "); ptr += 3;
 	ptr += memfmt(ptr, smon.mem_total, 1);
-	XDrawString(dpy, win, gc, rect.x, baseline, buf, strlen(buf));
+	draw_text(rect.x, baseline, buf);
 
-	y = baseline + font->descent + 1 + BEVEL;
+	y = baseline + font.descent + 1 + BEVEL;
 	draw_bar(rect.x, y, rect.width, used, smon.mem_total);
 }
 
