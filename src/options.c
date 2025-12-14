@@ -3,11 +3,13 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#if defined(unix) || defined(__unix)
+#include "xmon.h"
+#include "options.h"
+
+#ifdef BUILD_UNIX
 #include <unistd.h>
 #include <pwd.h>
 #endif
-#include "options.h"
 
 struct options opt;
 
@@ -21,7 +23,7 @@ static struct color def_uicolor[NUM_UICOLORS] = {
 /* these must match the order of the MON_* enums in options.h */
 static const char *monstr[] = {"cpu", "mem", "load", "net", 0};
 
-#if defined(unix) || defined(__unix)
+#ifdef BUILD_UNIX
 static const char *cfgpath[] = {"~/.config/xmon.conf", "~/.xmon.conf", "/etc/xmon.conf", 0};
 #else
 static const char *cfgpath[] = {"xmon.conf", 0};
@@ -53,7 +55,7 @@ void init_opt(void)
 	opt.cpu.ncolors = 16;
 
 	/* expand cfg paths */
-#if defined(unix) || defined(__unix)
+#ifdef BUILD_UNIX
 	if((pw = getpwuid(getuid()))) {
 		homedir = pw->pw_dir;
 	} else {
