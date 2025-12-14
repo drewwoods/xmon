@@ -42,7 +42,7 @@ void netmon_resize(int x, int y)
 {
 	int i;
 
-	if(!plot || x > plot_width) {
+	if(!plot || x > (int)plot_width) {
 		free(plot);
 		free(rx_bars);
 		free(tx_bars);

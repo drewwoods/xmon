@@ -1,0 +1,24 @@
+obj = src\main.obj src\widget.obj src\options.obj \
+      src\cpumon.obj src\memmon.obj src\loadmon.obj src\netmon.obj \
+      src\win32\cpu.obj src\win32\mem.obj src\win32\load.obj \
+      src\win32\net.obj src\win32\disp.obj
+bin = xmon.exe
+
+#opt = /O2 /G5
+dbg = /Zi
+warn = /W3
+inc = /I src
+
+CC = cl
+CFLAGS = /nologo $(opt) $(dbg) $(warn) $(inc)
+LDFLAGS = /nologo /MD /link user32.lib gdi32.lib
+
+$(bin): $(obj)
+	$(CC) /Fe$@ $(obj) $(LDFLAGS)
+
+.c.obj:
+	$(CC) /c /Fo$@ $< $(CFLAGS)
+
+clean:
+	del src\*.obj src\win32\*.obj
+	del $(bin)

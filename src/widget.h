@@ -1,8 +1,6 @@
 #ifndef WIDGET_H_
 #define WIDGET_H_
 
-#include <X11/Xlib.h>
-
 /* UI colors */
 enum {
 	COL_FG,

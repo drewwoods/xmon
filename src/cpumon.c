@@ -1,9 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alloca.h>
 #include "xmon.h"
 #include "options.h"
+
+#ifdef BUILD_WIN32
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
 
 #define GRAD_COLORS	4
 
@@ -20,7 +25,7 @@ struct color grad[GRAD_COLORS] = {
 	{255, 250, 220}
 };
 
-static int resize_framebuf(int width, int height);
+static int resize_framebuf(unsigned int width, unsigned int height);
 static int mask_to_shift(unsigned int mask);
 
 int cpumon_init(void)
@@ -91,16 +96,18 @@ int cpumon_height(int w)
 
 void cpumon_update(void)
 {
-	int i, row_offs, cur, col0;
 	unsigned char *fb, *row;
 	unsigned int *row32;
 	int *cpucol;
+	int cpunum, dcpu, col0;
+	unsigned int i, row_offs, cur, x;
 
 	if(!img) return;
 
 	fb = (unsigned char*)img->pixels;
 
 	cpucol = alloca(smon.num_cpus * sizeof *cpucol);
+
 	for(i=0; i<smon.num_cpus; i++) {
 		int usage = smon.cpu[i];
 		if(usage >= 128) usage = 127;
@@ -162,7 +169,7 @@ void cpumon_draw(void)
 	blit_image(img, view_rect.x, view_rect.y);
 }
 
-static int resize_framebuf(int width, int height)
+static int resize_framebuf(unsigned int width, unsigned int height)
 {
 	if(img && width == img->width && height == img->height) {
 		return 0;

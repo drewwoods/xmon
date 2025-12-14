@@ -3,7 +3,7 @@
 #include "xmon.h"
 #include "options.h"
 
-static XRectangle rect;
+static struct rect rect;
 static int bar_max;
 
 int loadmon_init(void)

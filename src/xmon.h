@@ -1,6 +1,13 @@
 #ifndef XMON_H_
 #define XMON_H_
 
+#if defined(unix) || defined(__unix) || defined(__APPLE__)
+#define BUILD_UNIX
+#endif
+#if defined(WIN32) || defined(_WIN32)
+#define BUILD_WIN32
+#endif
+
 #include "disp.h"
 #include "widget.h"
 
@@ -8,7 +15,7 @@ struct sysmon {
 	/* CPU usage range [0, 127] */
 	int single;		/* aggregate CPU usage for all CPUs */
 	int *cpu;		/* per CPU usage */
-	int num_cpus;
+	unsigned int num_cpus;
 
 	float loadavg[3];
 

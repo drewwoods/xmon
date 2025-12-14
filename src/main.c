@@ -2,14 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <sys/select.h>
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
-#include <X11/Xutil.h>
 #include "xmon.h"
 #include "options.h"
+
+#ifdef BUILD_UNIX
+#include <sys/time.h>
+
+static struct timeval tv0;
+#endif
+#ifdef BUILD_WIN32
+#include <windows.h>
+
+static long tm0;
+#endif
 
 /* UI element bits */
 enum {
@@ -28,9 +33,6 @@ static int frm_width;	/* total with bevels */
 static int bevel;
 static unsigned int ui_active_widgets;
 static unsigned int dirty;
-
-static struct timeval tv0;
-
 
 static struct rect minrect;
 static struct rect cpu_rect, mem_rect, load_rect, net_rect;
@@ -98,7 +100,12 @@ int main(int argc, char **argv)
 	map_window();
 
 	prev_upd = -opt.upd_interv;
+#ifdef BUILD_UNIX
 	gettimeofday(&tv0, 0);
+#endif
+#ifdef BUILD_WIN32
+	tm0 = GetTickCount();
+#endif
 
 	while(!quit) {
 		msec = get_msec();
@@ -241,6 +248,7 @@ void draw_window(unsigned int dirty_override)
 }
 
 
+#ifdef BUILD_UNIX
 long get_msec(void)
 {
 	struct timeval tv;
@@ -248,3 +256,10 @@ long get_msec(void)
 	gettimeofday(&tv, 0);
 	return (tv.tv_sec - tv0.tv_sec) * 1000 + (tv.tv_usec - tv0.tv_usec) / 1000;
 }
+#endif
+#ifdef BUILD_WIN32
+long get_msec(void)
+{
+	return GetTickCount() - tm0;
+}
+#endif
