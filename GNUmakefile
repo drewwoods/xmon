@@ -47,3 +47,11 @@ install: $(bin)
 .PHONY: uninstall
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(bin)
+
+.PHONY: cross
+cross:
+	$(MAKE) CC=i686-w64-mingw32-gcc sys=MINGW
+
+.PHONY: cross-clean
+cross-clean:
+	$(MAKE) sys=MINGW clean

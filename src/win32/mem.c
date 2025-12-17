@@ -28,6 +28,7 @@ void mem_update(void)
 {
 	if(gmemstatex) {
 		struct memstatex msx;
+		msx.length = sizeof msx;
 		gmemstatex(&msx);
 		smon.mem_total = (unsigned long)(msx.total_phys >> 10);
 		smon.mem_free = (unsigned long)(msx.avail_phys >> 10);
