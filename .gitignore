@@ -5,3 +5,8 @@
 xmon
 core
 .cache/
+*.obj
+Debug/
+Release/
+*.exe
+*.zip

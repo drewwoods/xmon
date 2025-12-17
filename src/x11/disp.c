@@ -37,7 +37,7 @@ typedef struct {
 
 int quit;
 
-int win_x, win_y, win_width, win_height;
+int win_x, win_y, win_width, win_height, win_visible;
 
 struct font font;
 
@@ -200,6 +200,10 @@ void draw_poly(struct point *v, int count)
 void draw_text(int x, int y, const char *str)
 {
 	XDrawString(dpy, win, gc, x, y, str, strlen(str));
+}
+
+void begin_drawing(void)
+{
 }
 
 void end_drawing(void)
@@ -381,22 +385,22 @@ static int create_window(void)
 
 static void proc_event(XEvent *ev)
 {
-	static int mapped, prev_x, prev_y;
+	static int prev_x, prev_y;
 	KeySym sym;
 
 	switch(ev->type) {
 	case Expose:
-		if(!mapped || ev->xexpose.count > 0) {
+		if(!win_visible || ev->xexpose.count > 0) {
 			break;
 		}
-		draw_window(0xffff);
+		draw_window(UI_FRAME | ui_active_widgets);
 		break;
 
 	case MapNotify:
-		mapped = 1;
+		win_visible = 1;
 		break;
 	case UnmapNotify:
-		mapped = 0;
+		win_visible = 0;
 		break;
 
 	case KeyPress:

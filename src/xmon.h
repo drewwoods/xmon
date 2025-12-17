@@ -11,6 +11,18 @@
 #include "disp.h"
 #include "widget.h"
 
+
+/* UI element bits */
+enum {
+	UI_FRAME	= 0x0001,
+	UI_CPU		= 0x0002,
+	UI_MEM		= 0x0004,
+	UI_LOAD		= 0x0008,
+	UI_NET		= 0x0010,
+
+	UI_ALL		= 0x7fff
+};
+
 struct sysmon {
 	/* CPU usage range [0, 127] */
 	int single;		/* aggregate CPU usage for all CPUs */
@@ -24,6 +36,7 @@ struct sysmon {
 };
 
 extern struct sysmon smon;
+extern unsigned int ui_active_widgets;
 
 void layout(void);
 void draw_window(unsigned int dirty_override);

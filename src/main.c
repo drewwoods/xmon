@@ -16,22 +16,11 @@ static struct timeval tv0;
 static long tm0;
 #endif
 
-/* UI element bits */
-enum {
-	UI_FRAME	= 0x0001,
-	UI_CPU		= 0x0002,
-	UI_MEM		= 0x0004,
-	UI_LOAD		= 0x0008,
-	UI_NET		= 0x0010,
-
-	UI_ALL		= 0x7fff
-};
-
 struct sysmon smon;
+unsigned int ui_active_widgets;
 
 static int frm_width;	/* total with bevels */
 static int bevel;
-static unsigned int ui_active_widgets;
 static unsigned int dirty;
 
 static struct rect minrect;
@@ -113,6 +102,7 @@ int main(int argc, char **argv)
 		delay = opt.upd_interv - dt;
 
 		if(proc_events(delay) == -1) break;
+		if(quit) break;
 
 		msec = get_msec();
 		if(msec - prev_upd >= opt.upd_interv) {
@@ -120,7 +110,6 @@ int main(int argc, char **argv)
 
 			if(opt.mon & MON_CPU) {
 				cpu_update();
-				cpumon_update();
 			}
 			if(opt.mon & MON_MEM) {
 				mem_update();
@@ -132,7 +121,14 @@ int main(int argc, char **argv)
 				net_update();
 			}
 
-			draw_window(ui_active_widgets);
+			if(win_visible) {
+				begin_drawing();
+				if(opt.mon & MON_CPU) {
+					cpumon_update();
+				}
+				draw_window(ui_active_widgets);
+				end_drawing();
+			}
 		}
 	}
 
@@ -244,7 +240,6 @@ void draw_window(unsigned int dirty_override)
 	}
 
 	dirty = 0;
-	end_drawing();
 }
 
 

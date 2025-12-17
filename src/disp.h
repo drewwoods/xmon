@@ -2,7 +2,13 @@
 #define DISP_H_
 
 struct point {
+#if defined(WIN32) || defined(_WIN32)
+	/* match the GDI POINT structure */
+	long x, y;
+#else
+	/* match the X11 XPoint structure */
 	short x, y;
+#endif
 };
 
 struct rect {
@@ -29,7 +35,7 @@ struct font {
 };
 
 extern int quit;
-extern int win_x, win_y, win_width, win_height;
+extern int win_x, win_y, win_width, win_height, win_visible;
 extern struct font font;
 
 int init_disp(void);
@@ -50,6 +56,7 @@ void draw_rects(struct rect *rects, int count);
 void draw_poly(struct point *v, int count);
 void draw_text(int x, int y, const char *str);
 
+void begin_drawing(void);
 void end_drawing(void);
 
 struct image *create_image(unsigned int width, unsigned int height);
