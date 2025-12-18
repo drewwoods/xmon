@@ -35,9 +35,11 @@ static void calc_bevel_colors(void);
 
 void init_opt(void)
 {
+#ifdef BUILD_UNIX
 	int i;
 	char *path, *homedir = 0;
 	struct passwd *pw;
+#endif
 
 	opt.x = opt.y = 0;
 	opt.xsz = 100;

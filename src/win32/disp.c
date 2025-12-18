@@ -24,9 +24,18 @@ static HWND win;
 static HDC hdc;
 static unsigned int wstyle;
 
+#define MAX_COLORS	236
+static char cmapbuf[sizeof(LOGPALETTE) + (MAX_COLORS - 1) * sizeof(PALETTEENTRY)];
+static LOGPALETTE *cmap;
+static HPALETTE hpal;
+static HBRUSH brush, bgbrush;
+static unsigned int cur_color = 0xffffff, cur_bgcolor = 0xffffff;
+
+
 int main(int argc, char **argv);
 
 static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam);
+
 
 int WINAPI WinMain(HINSTANCE _hinst, HINSTANCE prev, char *cmdline, int cmdshow)
 {
@@ -97,6 +106,9 @@ int init_disp(void)
 	}
 	hdc = GetDC(win);
 
+	cmap = (LOGPALETTE*)cmapbuf;
+	cmap->palVersion = 0x300;
+
 	SelectObject(hdc, GetStockObject(NULL_PEN));
 	SetBkColor(hdc, GetSysColor(COLOR_WINDOW));
 
@@ -157,15 +169,55 @@ void map_window(void)
 
 unsigned int alloc_color(unsigned int r, unsigned int g, unsigned int b)
 {
-	return 0;
+	unsigned int i;
+	PALETTEENTRY *ent = cmap->palPalEntry;
+
+	for(i=0; i<cmap->palNumEntries; i++) {
+		if(ent->peRed == r && ent->peGreen == g && ent->peBlue == b) {
+			/*printf("alloc_color(%u, %u, %u) -> %u (existing)\n", r, g, b, i);*/
+			return i;
+		}
+		ent++;
+	}
+
+	if(cmap->palNumEntries >= MAX_COLORS) {
+		fprintf(stderr, "Failed to allocate color, maximum reached\n");
+		return 0;
+	}
+	/*printf("alloc_color(%u, %u, %u) -> %u\n", r, g, b, cmap->palNumEntries);*/
+	ent->peRed = r;
+	ent->peGreen = g;
+	ent->peBlue = b;
+	ent->peFlags = 0;
+	return cmap->palNumEntries++;
 }
 
 void set_color(unsigned int color)
 {
+	if(cur_color == color) return;
+
+	if(brush) {
+		SelectObject(hdc, GetStockObject(BLACK_BRUSH));
+		DeleteObject(brush);
+	}
+	if((brush = CreateSolidBrush(PALETTEINDEX(color)))) {
+		SelectObject(hdc, brush);
+	}
+	SetTextColor(hdc, PALETTEINDEX(color));
+	cur_color = color;
 }
 
 void set_background(unsigned int color)
 {
+	if(cur_bgcolor == color) return;
+
+	if(bgbrush) {
+		DeleteObject(bgbrush);
+	}
+	bgbrush = CreateSolidBrush(PALETTEINDEX(color));
+
+	SetBkColor(hdc, PALETTEINDEX(color));
+	cur_bgcolor = color;
 }
 
 void clear_window(void)
@@ -201,11 +253,21 @@ void draw_text(int x, int y, const char *str)
 
 void begin_drawing(void)
 {
+	ValidateRect(win, 0);
+
+	if(!hpal) {
+		if(!(hpal = CreatePalette(cmap))) {
+			fprintf(stderr, "failed to create palette\n");
+			return;
+		}
+	}
+
+	SelectPalette(hdc, hpal, 0);
+	RealizePalette(hdc);
 }
 
 void end_drawing(void)
 {
-	ValidateRect(win, 0);
 }
 
 struct image *create_image(unsigned int width, unsigned int height)
@@ -234,9 +296,24 @@ static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, 
 		break;
 
 	case WM_PAINT:
-		ValidateRect(win, 0);
+		begin_drawing();
 		draw_window(UI_FRAME | ui_active_widgets);
+		end_drawing();
 		break;
+
+	case WM_ERASEBKGND:
+		if(!hpal) {
+			if((hpal = CreatePalette(cmap))) {
+				SelectPalette(hdc, hpal, 0);
+				RealizePalette(hdc);
+			}
+		}
+		if(bgbrush) {
+			SelectObject(hdc, bgbrush);
+			draw_rect(win_x, win_y, win_width, win_height);
+			return TRUE;
+		}
+		return DefWindowProc(win, msg, wparam, lparam);
 
 	case WM_MOVE:
 		win_x = LOWORD(lparam);
@@ -252,6 +329,17 @@ static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, 
 			win_height = HIWORD(lparam);
 		}
 		break;
+
+	case WM_QUERYNEWPALETTE:
+		if(!hpal) {
+			if(!(hpal = CreatePalette(cmap))) {
+				fprintf(stderr, "failed to create palette\n");
+				return FALSE;
+			}
+		}
+		SelectPalette(hdc, hpal, 0);
+		RealizePalette(hdc);
+		return TRUE;	/* we've set our own logical palette */
 
 	case WM_KEYDOWN:
 		if(wparam == VK_ESCAPE) {
