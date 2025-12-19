@@ -8,8 +8,15 @@
 #include "xmon.h"
 #include "options.h"
 
+#ifdef BUILD_WIN32
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 struct image_data {
-	int foo;
+	HBITMAP hbm;
+	HDC imgdc;
 };
 
 
@@ -272,20 +279,97 @@ void end_drawing(void)
 
 struct image *create_image(unsigned int width, unsigned int height)
 {
-	return 0;
+	unsigned int i, bisz, dibusage;
+	struct image *img;
+	struct image_data *imgdata;
+	BITMAPINFO *bi;
+	BITMAPINFOHEADER bih;
+	unsigned short *palidx;
+	BITMAP bm;
+
+	if(!(img = calloc(1, sizeof *img + sizeof(struct image_data)))) {
+		return 0;
+	}
+	img->data = img + 1;
+	imgdata = img->data;
+
+	img->width = width;
+	img->height = height;
+	img->bpp = GetDeviceCaps(hdc, BITSPIXEL) * GetDeviceCaps(hdc, PLANES);
+	img->pitch = (width * img->bpp) >> 3;
+
+	if(img->bpp <= 8) {
+		bisz = sizeof(BITMAPINFO) + cmap->palNumEntries * 2;
+		bi = alloca(bisz);
+		palidx = (unsigned short*)bi->bmiColors;
+
+		memset(&bi->bmiHeader, 0, sizeof bi->bmiHeader);
+		bi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bi->bmiHeader.biWidth = width;
+		bi->bmiHeader.biHeight = height;
+		bi->bmiHeader.biPlanes = 1;
+		bi->bmiHeader.biBitCount = 8;
+		bi->bmiHeader.biCompression = BI_RGB;	/* uncompressed */
+
+		for(i=0; i<cmap->palNumEntries; i++) {
+			palidx[i] = i;
+		}
+		dibusage = DIB_PAL_COLORS;
+	} else {
+		memset(&bih, 0, sizeof bih);
+		bih.biSize = sizeof bih;
+		bih.biWidth = width;
+		bih.biHeight = height;
+		bih.biPlanes = 1;
+		bih.biBitCount = img->bpp;
+		bih.biCompression = BI_RGB;
+
+		bi = (BITMAPINFO*)&bih;
+
+		dibusage = DIB_RGB_COLORS;
+
+		img->rmask = 0xff;
+		img->gmask = 0xff00;
+		img->bmask = 0xff0000;
+	}
+
+	if(!(imgdata->hbm = CreateDIBSection(hdc, bi, dibusage, &img->pixels, 0, 0))) {
+		fprintf(stderr, "failed to create DIB section\n");
+		free(img);
+		return 0;
+	}
+
+	GetObject(imgdata->hbm, sizeof bm, &bm);
+	imgdata->imgdc = CreateCompatibleDC(hdc);
+	SelectObject(imgdata->imgdc, imgdata->hbm);
+
+	return img;
 }
 
 void free_image(struct image *img)
 {
+	struct image_data *imgdata;
+
+	if(!img) return;
+
+	imgdata = img->data;
+	if(imgdata->hbm) {
+		DeleteObject(imgdata->hbm);
+	}
+	free(img);
 }
 
 void blit_image(struct image *img, int x, int y)
 {
+	struct image_data *imgdata = img->data;
+	BitBlt(hdc, x, y, img->width, img->height, imgdata->imgdc, 0, 0, SRCCOPY);
 }
 
 void blit_subimage(struct image *img, int dx, int dy, int sx, int sy,
 		unsigned int width, unsigned int height)
 {
+	struct image_data *imgdata = img->data;
+	BitBlt(hdc, dx, dy, width, height, imgdata->imgdc, sx, sy, SRCCOPY);
 }
 
 static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam)
