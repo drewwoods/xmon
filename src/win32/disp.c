@@ -306,7 +306,7 @@ struct image *create_image(unsigned int width, unsigned int height)
 		memset(&bi->bmiHeader, 0, sizeof bi->bmiHeader);
 		bi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 		bi->bmiHeader.biWidth = width;
-		bi->bmiHeader.biHeight = height;
+		bi->bmiHeader.biHeight = -height;
 		bi->bmiHeader.biPlanes = 1;
 		bi->bmiHeader.biBitCount = 8;
 		bi->bmiHeader.biCompression = BI_RGB;	/* uncompressed */
@@ -319,7 +319,7 @@ struct image *create_image(unsigned int width, unsigned int height)
 		memset(&bih, 0, sizeof bih);
 		bih.biSize = sizeof bih;
 		bih.biWidth = width;
-		bih.biHeight = height;
+		bih.biHeight = -height;
 		bih.biPlanes = 1;
 		bih.biBitCount = img->bpp;
 		bih.biCompression = BI_RGB;
@@ -328,9 +328,9 @@ struct image *create_image(unsigned int width, unsigned int height)
 
 		dibusage = DIB_RGB_COLORS;
 
-		img->rmask = 0xff;
+		img->rmask = 0xff0000;
 		img->gmask = 0xff00;
-		img->bmask = 0xff0000;
+		img->bmask = 0xff;
 	}
 
 	if(!(imgdata->hbm = CreateDIBSection(hdc, bi, dibusage, &img->pixels, 0, 0))) {
