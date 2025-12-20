@@ -30,6 +30,7 @@ static HINSTANCE hinst;
 static HWND win;
 static HDC hdc;
 static unsigned int wstyle;
+static int scr_bpp;
 
 #define MAX_COLORS	236
 static char cmapbuf[sizeof(LOGPALETTE) + (MAX_COLORS - 1) * sizeof(PALETTEENTRY)];
@@ -112,6 +113,7 @@ int init_disp(void)
 		return -1;
 	}
 	hdc = GetDC(win);
+	scr_bpp = GetDeviceCaps(hdc, BITSPIXEL) * GetDeviceCaps(hdc, PLANES);
 
 	cmap = (LOGPALETTE*)cmapbuf;
 	cmap->palVersion = 0x300;
@@ -199,31 +201,50 @@ unsigned int alloc_color(unsigned int r, unsigned int g, unsigned int b)
 	return cmap->palNumEntries++;
 }
 
+static COLORREF get_colref(unsigned int cidx)
+{
+	PALETTEENTRY *col;
+
+	if(scr_bpp <= 8) {
+		return PALETTEINDEX(cidx);
+	}
+
+	col = cmap->palPalEntry + cidx;
+	return RGB(col->peRed, col->peGreen, col->peBlue);
+}
+
 void set_color(unsigned int color)
 {
+	COLORREF colref;
+
 	if(cur_color == color) return;
+
+	colref = get_colref(color);
 
 	if(brush) {
 		SelectObject(hdc, GetStockObject(BLACK_BRUSH));
 		DeleteObject(brush);
 	}
-	if((brush = CreateSolidBrush(PALETTEINDEX(color)))) {
+	if((brush = CreateSolidBrush(colref))) {
 		SelectObject(hdc, brush);
 	}
-	SetTextColor(hdc, PALETTEINDEX(color));
+	SetTextColor(hdc, colref);
 	cur_color = color;
 }
 
 void set_background(unsigned int color)
 {
+	COLORREF colref;
+
 	if(cur_bgcolor == color) return;
+
+	colref = get_colref(color);
 
 	if(bgbrush) {
 		DeleteObject(bgbrush);
 	}
-	bgbrush = CreateSolidBrush(PALETTEINDEX(color));
-
-	SetBkColor(hdc, PALETTEINDEX(color));
+	bgbrush = CreateSolidBrush(colref);
+	SetBkColor(hdc, colref);
 	cur_bgcolor = color;
 }
 
@@ -295,10 +316,10 @@ struct image *create_image(unsigned int width, unsigned int height)
 
 	img->width = width;
 	img->height = height;
-	img->bpp = GetDeviceCaps(hdc, BITSPIXEL) * GetDeviceCaps(hdc, PLANES);
+	img->bpp = scr_bpp;
 	img->pitch = (width * img->bpp) >> 3;
 
-	if(img->bpp <= 8) {
+	if(scr_bpp <= 8) {
 		bisz = sizeof(BITMAPINFO) + cmap->palNumEntries * 2;
 		bi = alloca(bisz);
 		palidx = (unsigned short*)bi->bmiColors;
@@ -306,7 +327,7 @@ struct image *create_image(unsigned int width, unsigned int height)
 		memset(&bi->bmiHeader, 0, sizeof bi->bmiHeader);
 		bi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 		bi->bmiHeader.biWidth = width;
-		bi->bmiHeader.biHeight = -height;
+		bi->bmiHeader.biHeight = -(int)height;
 		bi->bmiHeader.biPlanes = 1;
 		bi->bmiHeader.biBitCount = 8;
 		bi->bmiHeader.biCompression = BI_RGB;	/* uncompressed */
@@ -319,7 +340,7 @@ struct image *create_image(unsigned int width, unsigned int height)
 		memset(&bih, 0, sizeof bih);
 		bih.biSize = sizeof bih;
 		bih.biWidth = width;
-		bih.biHeight = -height;
+		bih.biHeight = -(int)height;
 		bih.biPlanes = 1;
 		bih.biBitCount = img->bpp;
 		bih.biCompression = BI_RGB;

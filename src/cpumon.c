@@ -12,6 +12,12 @@
 
 #define GRAD_COLORS	4
 
+#define MIN_COLW		(BEVEL > 8 ? BEVEL : 8)
+#define MIN_COL_STEP	(BEVEL * 2 + MIN_COLW)
+
+static int sep_disp;
+static unsigned int colw, col_step;
+
 static struct color *rgbcolors;
 static unsigned int *colors;
 static int rshift, gshift, bshift;
@@ -81,6 +87,8 @@ void cpumon_resize(int x, int y)
 	view_rect.width = x - BEVEL * 2;
 	view_rect.height = y - BEVEL * 2 - font.height;
 
+	sep_disp = view_rect.width >= smon.num_cpus * MIN_COL_STEP;
+
 	lb_rect.width = view_rect.width;
 	lb_rect.height = font.height;
 
@@ -93,12 +101,6 @@ int cpumon_height(int w)
 	int min_h = font.height + 2 * BEVEL + 8;
 	return h < min_h ? min_h : h;
 }
-
-#define MIN_COLW		(BEVEL > 8 ? BEVEL : 8)
-#define MIN_COL_STEP	(BEVEL * 2 + MIN_COLW)
-
-static int sep_disp;
-static unsigned int colw, col_step;
 
 void cpumon_update(void)
 {
@@ -118,7 +120,6 @@ void cpumon_update(void)
 		cpucol[i] = (usage * opt.cpu.ncolors) >> 7;
 	}
 
-	sep_disp = img->width >= smon.num_cpus * MIN_COL_STEP;
 	if(sep_disp) {
 		unsigned int usable_w = rect.width - smon.num_cpus * (BEVEL * 2);
 		colw = usable_w / smon.num_cpus / 2;

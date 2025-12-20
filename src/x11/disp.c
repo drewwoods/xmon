@@ -393,7 +393,9 @@ static void proc_event(XEvent *ev)
 		if(!win_visible || ev->xexpose.count > 0) {
 			break;
 		}
+		begin_drawing();
 		draw_window(UI_FRAME | ui_active_widgets);
+		end_drawing();
 		break;
 
 	case MapNotify:

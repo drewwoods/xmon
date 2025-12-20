@@ -20,5 +20,6 @@ $(bin): $(obj)
 	$(CC) /c /Fo$@ $< $(CFLAGS)
 
 clean:
-	del src\*.obj src\win32\*.obj
+	del src\*.obj
+	del src\win32\*.obj
 	del $(bin)
