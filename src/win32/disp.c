@@ -114,6 +114,7 @@ int init_disp(void)
 	}
 	hdc = GetDC(win);
 	scr_bpp = GetDeviceCaps(hdc, BITSPIXEL) * GetDeviceCaps(hdc, PLANES);
+	if(scr_bpp == 24) scr_bpp = 32;
 
 	cmap = (LOGPALETTE*)cmapbuf;
 	cmap->palVersion = 0x300;
