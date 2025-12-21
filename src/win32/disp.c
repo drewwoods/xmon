@@ -43,6 +43,7 @@ static unsigned int cur_color = 0xffffff, cur_bgcolor = 0xffffff;
 int main(int argc, char **argv);
 
 static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam);
+static int parse_font(LOGFONT *lf, const char *str);
 
 
 int WINAPI WinMain(HINSTANCE _hinst, HINSTANCE prev, char *cmdline, int cmdshow)
@@ -84,6 +85,8 @@ int init_disp(void)
 	WNDCLASSEX wc = {0};
 	TEXTMETRIC tm;
 	RECT rect;
+	LOGFONT lf = {0};
+	HFONT hfont;
 
 	hinst = GetModuleHandle(0);
 
@@ -121,6 +124,16 @@ int init_disp(void)
 
 	SelectObject(hdc, GetStockObject(NULL_PEN));
 	SetBkColor(hdc, GetSysColor(COLOR_WINDOW));
+	SetBkMode(hdc, TRANSPARENT);
+
+	if(parse_font(&lf, opt.vis.font) == 0) {
+		if(!(hfont = CreateFontIndirect(&lf))) {
+			fprintf(stderr, "failed to create font: %s\n", opt.vis.font);
+		} else {
+			font.data = hfont;
+			SelectObject(hdc, hfont);
+		}
+	}
 
 	GetTextMetrics(hdc, &tm);
 	font.height = tm.tmHeight;
@@ -456,5 +469,39 @@ static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, 
 	default:
 		return DefWindowProc(win, msg, wparam, lparam);
 	}
+	return 0;
+}
+
+static int parse_font(LOGFONT *lf, const char *str)
+{
+	char *name, *end, *tok;
+	int num;
+
+	if(!str) return -1;
+
+	lf->lfWeight = FW_NORMAL;
+
+	name = alloca(strlen(str) + 1);
+	strcpy(name, str);
+
+	if(!(tok = strtok(name, ":\n\r"))) {
+		return -1;
+	}
+	strcpy(lf->lfFaceName, name);
+
+	while((tok = strtok(0, ":\n\r"))) {
+		num = strtol(tok, &end, 10);
+		if(end != tok && num > 0) {
+			lf->lfHeight = num;
+		} else if(strcmp(tok, "bold") == 0) {
+			lf->lfWeight = FW_BOLD;
+		} else if(strcmp(tok, "italic") == 0) {
+			lf->lfItalic = 1;
+		} else {
+			fprintf(stderr, "parse_font: skip unknown attribute: \"%s\"\n", tok);
+		}
+	}
+
+	lf->lfQuality = PROOF_QUALITY;
 	return 0;
 }

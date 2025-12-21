@@ -49,7 +49,11 @@ void init_opt(void)
 	opt.mon = MON_ALL;
 
 	memcpy(opt.vis.uicolor, def_uicolor, sizeof opt.vis.uicolor);
+#ifdef BUILD_WIN32
+	opt.vis.font = "Arial:12:bold";
+#else
 	opt.vis.font = "-*-helvetica-bold-r-*-*-12-*";
+#endif
 	opt.vis.frm_width = 4;
 	opt.vis.decor = 0;
 	opt.vis.bevel_thick = 2;
