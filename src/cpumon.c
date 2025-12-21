@@ -119,7 +119,7 @@ void cpumon_update(void)
 	for(i=0; i<smon.num_cpus; i++) {
 		int usage = smon.cpu[i];
 		if(usage >= 128) usage = 127;
-		cpucol[i] = (usage * opt.cpu.ncolors) >> 7;
+		cpucol[i] = cpulut[usage];
 	}
 
 	if(sep_disp) {

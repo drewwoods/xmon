@@ -38,6 +38,9 @@ struct sysmon {
 extern struct sysmon smon;
 extern unsigned int ui_active_widgets;
 
+#define LUT_SIZE		128
+extern unsigned int cpulut[LUT_SIZE];
+
 void layout(void);
 void draw_window(unsigned int dirty_override);
 

@@ -5,6 +5,12 @@
 #include "xmon.h"
 #include "options.h"
 
+#ifdef CALC_LUT
+#include <math.h>
+#else
+#include "lut.h"
+#endif
+
 #ifdef BUILD_UNIX
 #include <sys/time.h>
 
@@ -18,6 +24,7 @@ static long tm0;
 
 struct sysmon smon;
 unsigned int ui_active_widgets;
+unsigned int cpulut[LUT_SIZE];
 
 static int frm_width;	/* total with bevels */
 static int bevel;
@@ -32,6 +39,7 @@ long get_msec(void);
 
 int main(int argc, char **argv)
 {
+	int i;
 	long prev_upd, msec, dt, delay;
 
 	init_opt();
@@ -41,6 +49,18 @@ int main(int argc, char **argv)
 	}
 	bevel = opt.vis.bevel_thick;
 	frm_width = opt.vis.frm_width + bevel;
+
+	for(i=0; i<LUT_SIZE; i++) {
+#ifdef CALC_LUT
+		float t = (float)i / (float)(LUT_SIZE - 1);
+		float x = 1.0f + (M_E - 1.0f) * t;
+		unsigned int val = (unsigned int)(log(x) * 255.0f);
+		printf("%u\n", val);
+#else
+		unsigned int val = lut[i];
+#endif
+		cpulut[i] = (unsigned int)((val * opt.cpu.ncolors) >> 8);
+	}
 
 	if((opt.mon & MON_CPU) && cpu_init() == -1) {
 		fprintf(stderr, "disabling CPU usage display\n");
