@@ -184,8 +184,8 @@ int parse_args(int argc, char **argv)
 				opt.net.ifname = argv[i];
 
 			} else if(strcmp(argv[i], "-cpu-colors") == 0) {
-				if(!argv[++i] || (num = atoi(argv[i])) < 2 || num > 128) {
-					fprintf(stderr, "-cpu-colors must be followed by a number between 2 and 128\n");
+				if(!argv[++i] || (num = atoi(argv[i])) < 3 || num > 128) {
+					fprintf(stderr, "-cpu-colors must be followed by a number between 3 and 128\n");
 					return -1;
 				}
 				opt.cpu.ncolors = num;
@@ -367,8 +367,8 @@ static int read_config_file(const char *fname, FILE *fp)
 			calc_bevel_colors();
 
 		} else if(strcmp(name, "cpu-colors") == 0) {
-			if(!num_val || val[0] < 2 || val[0] > 128) {
-				fprintf(stderr, "%s %d: invalid cpu-colors, expected number between 2 and 128\n", fname, lineno);
+			if(!num_val || val[0] < 3 || val[0] > 128) {
+				fprintf(stderr, "%s %d: invalid cpu-colors, expected number between 3 and 128\n", fname, lineno);
 				continue;
 			}
 			opt.cpu.ncolors = val[0];
