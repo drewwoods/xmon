@@ -21,6 +21,7 @@ struct vis_options {
 
 struct cpu_options {
 	int ncolors;
+	int autosplit;
 };
 
 struct net_options {

@@ -87,7 +87,9 @@ void cpumon_resize(int x, int y)
 	view_rect.width = x - BEVEL * 2;
 	view_rect.height = y - BEVEL * 2 - font.height;
 
-	sep_disp = view_rect.width >= smon.num_cpus * MIN_COL_STEP;
+	if(opt.cpu.autosplit) {
+		sep_disp = view_rect.width >= smon.num_cpus * MIN_COL_STEP;
+	}
 
 	lb_rect.width = view_rect.width;
 	lb_rect.height = font.height;
@@ -97,7 +99,7 @@ void cpumon_resize(int x, int y)
 
 int cpumon_height(int w)
 {
-	int h = w;
+	int h = 14 * w / 16;
 	int min_h = font.height + 2 * BEVEL + 8;
 	return h < min_h ? min_h : h;
 }

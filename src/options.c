@@ -42,7 +42,7 @@ void init_opt(void)
 #endif
 
 	opt.x = opt.y = 0;
-	opt.xsz = 100;
+	opt.xsz = 110;
 	opt.ysz = 200;
 	opt.upd_interv = 250;
 
@@ -59,6 +59,7 @@ void init_opt(void)
 	opt.vis.bevel_thick = 2;
 
 	opt.cpu.ncolors = 16;
+	opt.cpu.autosplit = 1;
 
 	/* expand cfg paths */
 #ifdef BUILD_UNIX
@@ -87,7 +88,7 @@ void init_opt(void)
 static const char *usage_str[] = {
 	"Usage: %s [options]\n",
 	"Options:\n",
-	" -size <width>x<height>: specify window size\n",
+	" -s/-size <width>x<height>: specify window size\n",
 	" -pos <X>x<Y>: specify window position\n",
 	" -update <interval>: update interval in milliseconds\n",
 	" -cpu/-nocpu: enable/disable CPU usage display\n",
@@ -99,6 +100,8 @@ static const char *usage_str[] = {
 	" -bevel <pixels>: bevel thickness for the default UI look\n",
 	" -textcolor <r,g,b>: specify the text color\n",
 	" -bgcolor <r,g,b>: specify background color\n",
+	" -cpu-colors <n>: number of colors to use for the CPU usage plot\n",
+	" -cpu-nosplit: don't split CPU plot to discrete bars even if they fit\n",
 	" -h/-help: print usage and exit\n",
 	0
 };
@@ -112,9 +115,9 @@ int parse_args(int argc, char **argv)
 
 	for(i=1; i<argc; i++) {
 		if(argv[i][0] == '-') {
-			if(strcmp(argv[i], "-size") == 0) {
+			if(strcmp(argv[i], "-size") == 0 || strcmp(argv[i], "-s") == 0) {
 				if(!argv[++i] || (num = sscanf(argv[i], "%ux%u", &width, &height)) <= 0) {
-					fprintf(stderr, "-size must be followed by WxH\n");
+					fprintf(stderr, "%s must be followed by WxH\n", argv[i - 1]);
 					return -1;
 				}
 				opt.xsz = width;
@@ -179,6 +182,16 @@ int parse_args(int argc, char **argv)
 					return -1;
 				}
 				opt.net.ifname = argv[i];
+
+			} else if(strcmp(argv[i], "-cpu-colors") == 0) {
+				if(!argv[++i] || (num = atoi(argv[i])) < 2 || num > 128) {
+					fprintf(stderr, "-cpu-colors must be followed by a number between 2 and 128\n");
+					return -1;
+				}
+				opt.cpu.ncolors = num;
+
+			} else if(strcmp(argv[i], "-cpu-nosplit") == 0) {
+				opt.cpu.autosplit = 0;
 
 			} else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0) {
 				for(j=0; usage_str[j]; j++) {
@@ -352,6 +365,20 @@ static int read_config_file(const char *fname, FILE *fp)
 
 			opt.vis.uicolor[cidx] = col;
 			calc_bevel_colors();
+
+		} else if(strcmp(name, "cpu-colors") == 0) {
+			if(!num_val || val[0] < 2 || val[0] > 128) {
+				fprintf(stderr, "%s %d: invalid cpu-colors, expected number between 2 and 128\n", fname, lineno);
+				continue;
+			}
+			opt.cpu.ncolors = val[0];
+
+		} else if(strcmp(name, "cpu-autosplit") == 0) {
+			if(boolval < 0) {
+				fprintf(stderr, "%s %d: invalid cpu-autosplit, expected boolean\n", fname, lineno);
+				continue;
+			}
+			opt.cpu.autosplit = boolval;
 
 		} else {
 			fprintf(stderr, "%s %d: ignoring unknown option: %s\n", fname, lineno, name);
