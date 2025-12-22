@@ -135,23 +135,27 @@ void cpu_update(void)
 	if(NtQuerySystemInformation) {
 		int status;
 		unsigned long retsz;
-		unsigned __int64 idle, work, sum, allidle, allsum;
+		unsigned __int64 idle, sum, allidle, allsum;
 
 		status = NtQuerySystemInformation(SYS_PROC_PERF_INFO, sppinfo, sppinfo_size, &retsz);
 
+		/* sum is the total CPU time for each processor. At first it might seem
+		 * wrong that sum is only user + kernel, and not user + kernel + idle,
+		 * but it turns out kernel includes idle. If we wanted pure active
+		 * kernel time we'd have to do kernel - idle.
+		 */
 		allidle = allsum = 0;
 		for(i=0; i<smon.num_cpus; i++) {
 			idle = sppinfo[i].idle.QuadPart - prev[i].idle.QuadPart;
-			work = (sppinfo[i].user.QuadPart - prev[i].user.QuadPart) +
+			sum = (sppinfo[i].user.QuadPart - prev[i].user.QuadPart) +
 					(sppinfo[i].kernel.QuadPart - prev[i].kernel.QuadPart);
-			sum = /*idle + */work;
-			smon.cpu[i] = 128 - (unsigned int)((idle << 7) / sum);
+			smon.cpu[i] = sum ? 128 - (unsigned int)((idle << 7) / sum) : 0;
 			prev[i] = sppinfo[i];
 
 			allidle += idle;
 			allsum += sum;
 		}
 
-		smon.single = 128 - (unsigned int)((allidle << 7) / allsum);
+		smon.single = allsum ? 128 - (unsigned int)((allidle << 7) / allsum) : 0;
 	}
 }
