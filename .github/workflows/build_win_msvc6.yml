@@ -18,7 +18,7 @@ jobs:
       with:
         path: |
           msvc6lt
-          vc6varsgh.bat
+          vc6fullvarsgh.bat
           icon.ico
         key: msvc6lt-cache2
 
@@ -27,13 +27,13 @@ jobs:
       run: |
         C:\msys64\usr\bin\wget.exe -q http://mutantstargoat.com/~nuclear/msvc6.zip
         7z x msvc6.zip
-        C:\msys64\usr\bin\wget.exe -q http://mutantstargoat.com/~nuclear/vc6varsgh.bat
+        C:\msys64\usr\bin\wget.exe -q http://mutantstargoat.com/~nuclear/vc6fullvarsgh.bat
         C:\msys64\usr\bin\wget.exe -q http://nuclear.mutantstargoat.com/sw/xmon/img/icon.ico
 
     - name: build xmon
       shell: cmd
       run: |
-        call vc6varsgh.bat
+        call vc6fullvarsgh.bat
         nmake -f Makefile.vc
 
     - uses: actions/upload-artifact@v4
