@@ -141,8 +141,6 @@ int init_disp(void)
 	font.descent = tm.tmDescent;
 
 	GetClientRect(win, &rect);
-	win_x = rect.left;
-	win_y = rect.top;
 	win_width = rect.right - rect.left;
 	win_height = rect.bottom - rect.top;
 
@@ -407,8 +405,21 @@ void blit_subimage(struct image *img, int dx, int dy, int sx, int sy,
 	BitBlt(hdc, dx, dy, width, height, imgdata->imgdc, sx, sy, SRCCOPY);
 }
 
+static void global_mouse(int *x, int *y)
+{
+	*x += win_x;
+	*y += win_y;
+}
+
+#ifndef GET_X_LPARAM
+#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
+#endif
+
 static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam)
 {
+	static int prev_mx, prev_my;
+
 	switch(msg) {
 	case WM_DESTROY:
 		PostQuitMessage(0);
@@ -429,14 +440,14 @@ static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, 
 		}
 		if(bgbrush) {
 			SelectObject(hdc, bgbrush);
-			draw_rect(win_x, win_y, win_width, win_height);
+			draw_rect(0, 0, win_width, win_height);
 			return TRUE;
 		}
 		return DefWindowProc(win, msg, wparam, lparam);
 
 	case WM_MOVE:
-		win_x = LOWORD(lparam);
-		win_y = HIWORD(lparam);
+		win_x = GET_X_LPARAM(lparam);
+		win_y = GET_Y_LPARAM(lparam);
 		break;
 
 	case WM_SIZE:
@@ -463,6 +474,33 @@ static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, 
 	case WM_KEYDOWN:
 		if(wparam == VK_ESCAPE) {
 			quit = 1;
+		}
+		break;
+
+	case WM_LBUTTONDOWN:
+		SetCapture(win);
+		prev_mx = GET_X_LPARAM(lparam);
+		prev_my = GET_Y_LPARAM(lparam);
+		global_mouse(&prev_mx, &prev_my);
+		break;
+
+	case WM_LBUTTONUP:
+		ReleaseCapture();
+		break;
+
+	case WM_MOUSEMOVE:
+		if(wparam & MK_LBUTTON) {
+			int dx, dy;
+			int mx = GET_X_LPARAM(lparam);
+			int my = GET_Y_LPARAM(lparam);
+			global_mouse(&mx, &my);
+			dx = mx - prev_mx;
+			dy = my - prev_my;
+			prev_mx = mx;
+			prev_my = my;
+
+			SetWindowPos(win, 0, win_x + dx, win_y + dy, 0, 0, SWP_NOSIZE |
+					SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
 		}
 		break;
 
