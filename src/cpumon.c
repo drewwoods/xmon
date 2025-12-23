@@ -110,8 +110,9 @@ void cpumon_update(void)
 	unsigned char *fb, *row;
 	unsigned int *row32;
 	unsigned short *row16;
-	int col0;
-	unsigned int i, j, row_offs, cur;
+	int col0, roffs, goffs, boffs;
+	unsigned int i, j, row_offs, cur, usable_w, pixel;
+	struct color *rgb;
 
 	if(!img) return;
 
@@ -124,7 +125,7 @@ void cpumon_update(void)
 	}
 
 	if(sep_disp) {
-		unsigned int usable_w = rect.width - smon.num_cpus * (BEVEL * 2);
+		usable_w = rect.width - smon.num_cpus * (BEVEL * 2);
 		colw = usable_w / smon.num_cpus / 2;
 		if(colw < MIN_COLW) colw = MIN_COLW;
 		col_step = rect.width / smon.num_cpus;
@@ -166,8 +167,6 @@ void cpumon_update(void)
 
 		if(sep_disp) {
 			for(i=0; i<smon.num_cpus; i++) {
-				struct color *rgb;
-				unsigned int pixel;
 				rgb = rgbcolors + cpucol[i];
 				pixel = ((rgb->r << rshift) & img->rmask) |
 					((rgb->g << gshift) & img->gmask) |
@@ -192,13 +191,40 @@ void cpumon_update(void)
 		}
 		break;
 
+	case 24:
+		roffs = rshift >> 3;
+		goffs = gshift >> 3;
+		boffs = bshift >> 3;
+
+		if(sep_disp) {
+			for(i=0; i<smon.num_cpus; i++) {
+				col0 = cpucol[i];
+				rgb = rgbcolors + col0;
+				for(j=0; j<colw; j++) {
+					row[roffs] = rgb->r;
+					row[goffs] = rgb->g;
+					row[boffs] = rgb->b;
+					row += 3;
+				}
+			}
+		} else {
+			for(i=0; i<img->width; i++) {
+				cur = i * smon.num_cpus / img->width;
+				col0 = cpucol[cur];
+				rgb = rgbcolors + col0;
+				row[roffs] = rgb->r;
+				row[goffs] = rgb->g;
+				row[boffs] = rgb->b;
+				row += 3;
+			}
+		}
+		break;
+
 	case 32:
 		row32 = (unsigned int*)row;
 
 		if(sep_disp) {
 			for(i=0; i<smon.num_cpus; i++) {
-				struct color *rgb;
-				unsigned int pixel;
 				rgb = rgbcolors + cpucol[i];
 				pixel = (rgb->r << rshift) | (rgb->g << gshift) | (rgb->b << bshift);
 
@@ -209,7 +235,6 @@ void cpumon_update(void)
 			}
 		} else {
 			for(i=0; i<img->width; i++) {
-				struct color *rgb;
 				cur = i * smon.num_cpus / img->width;
 				col0 = cpucol[cur];
 				rgb = rgbcolors + col0;
