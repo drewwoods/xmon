@@ -34,6 +34,8 @@ struct options {
 
 	unsigned int mon;
 
+	int verbose;
+
 	struct vis_options vis;
 	struct cpu_options cpu;
 	struct net_options net;

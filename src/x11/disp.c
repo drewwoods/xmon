@@ -276,6 +276,16 @@ no_xshm:
 	img->gmask = ximg->green_mask;
 	img->bmask = ximg->blue_mask;
 	imgdata->ximg = ximg;
+
+	if(opt.verbose) {
+		printf("image %ux%u %ubpp (pitch: %u)", img->width, img->height,
+				img->bpp, img->pitch);
+		if(img->bpp > 8) {
+			printf(" rgbmask %x %x %x\n", img->rmask, img->gmask, img->bmask);
+		} else {
+			putchar('\n');
+		}
+	}
 	return img;
 }
 
@@ -380,6 +390,10 @@ static int create_window(void)
 
 	vtmpl.visualid = winattr.visual->visualid;
 	vinf = XGetVisualInfo(dpy, VisualIDMask, &vtmpl, &num_match);
+
+	if(opt.verbose) {
+		printf("Using %d bit color visual\n", vinf->depth);
+	}
 	return 0;
 }
 

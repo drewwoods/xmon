@@ -100,8 +100,10 @@ static const char *usage_str[] = {
 	" -bevel <pixels>: bevel thickness for the default UI look\n",
 	" -textcolor <r,g,b>: specify the text color\n",
 	" -bgcolor <r,g,b>: specify background color\n",
+	" -v/-verbose: verbose output\n",
 	" -cpu-colors <n>: number of colors to use for the CPU usage plot\n",
 	" -cpu-nosplit: don't split CPU plot to discrete bars even if they fit\n",
+	" -net-if <name>: only collect traffic for a specific named interface\n",
 	" -h/-help: print usage and exit\n",
 	0
 };
@@ -175,6 +177,9 @@ int parse_args(int argc, char **argv)
 					return -1;
 				}
 				calc_bevel_colors();
+
+			} else if(strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "-verbose") == 0) {
+				opt.verbose = 1;
 
 			} else if(strcmp(argv[i], "-net-if") == 0) {
 				if(!argv[++i]) {
@@ -366,6 +371,13 @@ static int read_config_file(const char *fname, FILE *fp)
 			opt.vis.uicolor[cidx] = col;
 			calc_bevel_colors();
 
+		} else if(strcmp(name, "verbose") == 0) {
+			if(boolval < 0) {
+				fprintf(stderr, "%s %d: invalid verbose, expected boolean\n", fname, lineno);
+				continue;
+			}
+			opt.verbose = boolval;
+
 		} else if(strcmp(name, "cpu-colors") == 0) {
 			if(!num_val || val[0] < 3 || val[0] > 128) {
 				fprintf(stderr, "%s %d: invalid cpu-colors, expected number between 3 and 128\n", fname, lineno);
@@ -379,6 +391,9 @@ static int read_config_file(const char *fname, FILE *fp)
 				continue;
 			}
 			opt.cpu.autosplit = boolval;
+
+		} else if(strcmp(name, "net-if") == 0) {
+			opt.net.ifname = strdup(valstr);
 
 		} else {
 			fprintf(stderr, "%s %d: ignoring unknown option: %s\n", fname, lineno, name);

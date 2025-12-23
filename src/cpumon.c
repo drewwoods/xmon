@@ -109,6 +109,7 @@ void cpumon_update(void)
 	int *cpucol;
 	unsigned char *fb, *row;
 	unsigned int *row32;
+	unsigned short *row16;
 	int col0;
 	unsigned int i, j, row_offs, cur;
 
@@ -156,6 +157,37 @@ void cpumon_update(void)
 				cur = i * smon.num_cpus / img->width;
 				col0 = cpucol[cur];
 				*row++ = colors[col0];
+			}
+		}
+		break;
+
+	case 16:
+		row16 = (unsigned short*)row;
+
+		if(sep_disp) {
+			for(i=0; i<smon.num_cpus; i++) {
+				struct color *rgb;
+				unsigned int pixel;
+				rgb = rgbcolors + cpucol[i];
+				pixel = ((rgb->r << rshift) & img->rmask) |
+					((rgb->g << gshift) & img->gmask) |
+					((rgb->b << bshift) & img->bmask);
+
+				for(j=0; j<colw; j++) {
+					row16[j] = pixel;
+				}
+				row16 += colw;
+			}
+		} else {
+			for(i=0; i<img->width; i++) {
+				struct color *rgb;
+				cur = i * smon.num_cpus / img->width;
+				col0 = cpucol[cur];
+				rgb = rgbcolors + col0;
+
+				*row16++ = ((rgb->r << rshift) & img->rmask) |
+					((rgb->g << gshift) & img->gmask) |
+					((rgb->b << bshift) & img->bmask);
 			}
 		}
 		break;
@@ -252,10 +284,15 @@ static int resize_framebuf(unsigned int width, unsigned int height)
 
 static int mask_to_shift(unsigned int mask)
 {
-	int i;
-	for(i=0; i<32; i++) {
-		if(mask & 1) return i;
+	int shift = 0;
+	while(!(mask & 1)) {
 		mask >>= 1;
+		shift++;
 	}
-	return 0;
+	while(mask & 1) {
+		mask >>= 1;
+		shift++;
+	}
+
+	return shift ? shift - 8 : 0;
 }
