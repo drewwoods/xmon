@@ -62,6 +62,7 @@ void cpumon_resize(int x, int y);
 int cpumon_height(int w);
 void cpumon_update(void);
 void cpumon_draw(void);
+int cpumon_info(int show, int x, int y);
 
 void memmon_move(int x, int y);
 void memmon_resize(int x, int y);
@@ -80,7 +81,14 @@ void netmon_resize(int x, int y);
 int netmon_height(int w);
 void netmon_draw(void);
 
-long get_msec(void);					/* defined in main.c */
-int memfmt(char *buf, unsigned long mem, int baseu);  /* defined in memmon.c */
+/* defined in main.c */
+void redisplay(unsigned int mask);
+void rbutton(int press, int x, int y);
+void rdrag(int x, int y);
+int hittest(int x, int y, struct rect *r);
+long get_msec(void);
+
+/* defined in memmon.c */
+int memfmt(char *buf, unsigned long mem, int baseu);
 
 #endif	/* XMON_H_ */

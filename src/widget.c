@@ -18,7 +18,7 @@ int init_widgets(void)
 				opt.vis.uicolor[i].b);
 	}
 
-	col_bar = alloc_color(0x50, 0x50, 0xff);
+	col_bar = uicolor[COL_A];
 
 	bar_thick = BEVEL * 2;
 	if(bar_thick < 4) bar_thick = 4;

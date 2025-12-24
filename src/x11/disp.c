@@ -135,11 +135,9 @@ int proc_events(long delay)
 		return -1;
 	}
 
-	if(FD_ISSET(xfd, &rdset)) {
-		while(XPending(dpy)) {
-			XNextEvent(dpy, &ev);
-			proc_event(&ev);
-		}
+	while(XPending(dpy)) {
+		XNextEvent(dpy, &ev);
+		proc_event(&ev);
 	}
 	return 0;
 }
@@ -366,7 +364,7 @@ static int create_window(void)
 		return -1;
 	}
 	XSelectInput(dpy, win, StructureNotifyMask | ExposureMask | KeyPressMask |
-			ButtonPressMask | Button1MotionMask);
+			ButtonPressMask | ButtonReleaseMask | Button1MotionMask | Button3MotionMask);
 
 	if(XStringListToTextProperty((char**)&title, 1, &txprop)) {
 		XSetWMName(dpy, win, &txprop);
@@ -436,6 +434,14 @@ static void proc_event(XEvent *ev)
 		if(ev->xbutton.button == Button1) {
 			prev_x = ev->xbutton.x_root;
 			prev_y = ev->xbutton.y_root;
+		} else if(ev->xbutton.button == Button3) {
+			rbutton(1, ev->xbutton.x, ev->xbutton.y);
+		}
+		break;
+
+	case ButtonRelease:
+		if(ev->xbutton.button == Button3) {
+			rbutton(0, ev->xbutton.x, ev->xbutton.y);
 		}
 		break;
 
@@ -448,6 +454,9 @@ static void proc_event(XEvent *ev)
 			win_x += dx;
 			win_y += dy;
 			XMoveWindow(dpy, win, win_x, win_y);
+
+		} else if(ev->xmotion.state & Button3MotionMask) {
+			rdrag(ev->xmotion.x, ev->xmotion.y);
 		}
 		break;
 

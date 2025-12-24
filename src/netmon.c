@@ -25,9 +25,9 @@ int netmon_init(void)
 {
 	plot_max = 1;
 
-	col_rx = alloc_color(0x50, 0x50, 0xff);
-	col_tx = alloc_color(0xff, 0x50, 0x50);
-	col_both = alloc_color(0xc7, 0x50, 0xff);
+	col_rx = uicolor[COL_A];
+	col_tx = uicolor[COL_B];
+	col_both = uicolor[COL_AB];
 
 	return 0;
 }

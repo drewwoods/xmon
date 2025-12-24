@@ -8,6 +8,10 @@ enum {
 	COL_BGHI,
 	COL_BGLO,
 
+	COL_A,
+	COL_B,
+	COL_AB,
+
 	NUM_UICOLORS
 };
 

@@ -131,6 +131,10 @@ int main(int argc, char **argv)
 		dt = msec - prev_upd;
 		delay = opt.upd_interv - dt;
 
+		if(dirty) {
+			delay = 0;
+		}
+
 		if(proc_events(delay) == -1) break;
 		if(quit) break;
 
@@ -140,6 +144,7 @@ int main(int argc, char **argv)
 
 			if(opt.mon & MON_CPU) {
 				cpu_update();
+				cpumon_update();
 			}
 			if(opt.mon & MON_MEM) {
 				mem_update();
@@ -150,15 +155,13 @@ int main(int argc, char **argv)
 			if(opt.mon & MON_NET) {
 				net_update();
 			}
+			dirty |= ui_active_widgets;
+		}
 
-			if(win_visible) {
-				begin_drawing();
-				if(opt.mon & MON_CPU) {
-					cpumon_update();
-				}
-				draw_window(ui_active_widgets);
-				end_drawing();
-			}
+		if(dirty && win_visible) {
+			begin_drawing();
+			draw_window(0);
+			end_drawing();
 		}
 	}
 
@@ -272,6 +275,38 @@ void draw_window(unsigned int dirty_override)
 	dirty = 0;
 }
 
+void redisplay(unsigned int mask)
+{
+	dirty |= mask;
+}
+
+int hittest(int x, int y, struct rect *r)
+{
+	if(x < r->x || y < r->y) return 0;
+	if(x >= r->x + r->width) return 0;
+	if(y >= r->y + r->height) return 0;
+	return 1;
+}
+
+static int cpumon_info_state;
+
+void rbutton(int press, int x, int y)
+{
+	if(cpumon_info_state || hittest(x, y, &cpu_rect)) {
+		cpumon_info_state = cpumon_info(press, x, y);
+	}
+}
+
+void rdrag(int x, int y)
+{
+	if(hittest(x, y, &cpu_rect)) {
+		cpumon_info_state = cpumon_info(1, x, y);
+	} else {
+		if(cpumon_info_state) {
+			cpumon_info_state = cpumon_info(0, x, y);
+		}
+	}
+}
 
 #ifdef BUILD_UNIX
 long get_msec(void)

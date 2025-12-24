@@ -24,6 +24,8 @@ static int rshift, gshift, bshift;
 static struct rect rect, view_rect, lb_rect;
 static struct image *img;
 
+static int info_idx;
+
 struct color grad[GRAD_COLORS] = {
 	{5, 12, 80},
 	{128, 8, 4},
@@ -59,6 +61,7 @@ int cpumon_init(void)
 		colors[i] = alloc_color(rgbcolors[i].r, rgbcolors[i].g, rgbcolors[i].b);
 	}
 
+	info_idx = -1;
 	return 0;
 }
 
@@ -259,8 +262,13 @@ void cpumon_draw(void)
 	draw_rect(lb_rect.x, lb_rect.y, lb_rect.width, lb_rect.height);
 
 	baseline = lb_rect.y + lb_rect.height - font.descent;
-	sprintf(buf, "CPU %3d%%", smon.single * 100 >> 7);
-	set_color(uicolor[COL_FG]);
+	if(info_idx >= 0) {
+		sprintf(buf, "CPU%d: %d%%", info_idx, smon.cpu[info_idx] * 100 >> 7);
+		set_color(uicolor[COL_A]);
+	} else {
+		sprintf(buf, "CPU %d%%", smon.single * 100 >> 7);
+		set_color(uicolor[COL_FG]);
+	}
 	draw_text(lb_rect.x, baseline, buf);
 
 	if(!img) return;
@@ -283,6 +291,26 @@ void cpumon_draw(void)
 				BEVEL * 2, view_rect.height + BEVEL * 2, -BEVEL);
 		blit_image(img, view_rect.x, view_rect.y);
 	}
+}
+
+int cpumon_info(int show, int x, int y)
+{
+	int prev = info_idx;
+
+	if(!show) {
+		info_idx = -1;
+	} else {
+		if(!hittest(x, y, &view_rect)) {
+			info_idx = -1;
+		} else {
+			info_idx = (x - view_rect.x) * smon.num_cpus / view_rect.width;
+		}
+	}
+
+	if(info_idx != prev) {
+		redisplay(UI_CPU);
+	}
+	return info_idx >= 0;
 }
 
 static int resize_framebuf(unsigned int width, unsigned int height)

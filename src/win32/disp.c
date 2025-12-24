@@ -118,6 +118,9 @@ int init_disp(void)
 	hdc = GetDC(win);
 	scr_bpp = GetDeviceCaps(hdc, BITSPIXEL) * GetDeviceCaps(hdc, PLANES);
 	if(scr_bpp == 24) scr_bpp = 32;
+	if(opt.verbose) {
+		printf("color depth: %d bpp\n", scr_bpp);
+	}
 
 	cmap = (LOGPALETTE*)cmapbuf;
 	cmap->palVersion = 0x300;
@@ -376,6 +379,15 @@ struct image *create_image(unsigned int width, unsigned int height)
 	imgdata->imgdc = CreateCompatibleDC(hdc);
 	SelectObject(imgdata->imgdc, imgdata->hbm);
 
+	if(opt.verbose) {
+		printf("image %ux%u %ubpp (pitch: %u)", img->width, img->height,
+				img->bpp, img->pitch);
+		if(img->bpp > 8) {
+			printf(" rgbmask %x %x %x\n", img->rmask, img->gmask, img->bmask);
+		} else {
+			putchar('\n');
+		}
+	}
 	return img;
 }
 
@@ -488,6 +500,13 @@ static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, 
 		ReleaseCapture();
 		break;
 
+	case WM_RBUTTONDOWN:
+		rbutton(1, GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
+		break;
+	case WM_RBUTTONUP:
+		rbutton(0, GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
+		break;
+
 	case WM_MOUSEMOVE:
 		if(wparam & MK_LBUTTON) {
 			int dx, dy;
@@ -501,6 +520,9 @@ static LRESULT CALLBACK handle_event(HWND win, unsigned int msg, WPARAM wparam, 
 
 			SetWindowPos(win, 0, win_x + dx, win_y + dy, 0, 0, SWP_NOSIZE |
 					SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
+
+		} else if(wparam & MK_RBUTTON) {
+			rdrag(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
 		}
 		break;
 
