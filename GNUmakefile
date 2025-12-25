@@ -24,7 +24,7 @@ dep = $(src:.c=.d)
 bin = xmon
 
 CFLAGS = -std=gnu89 -pedantic -Wall -g -Isrc $(CFLAGS_$(sys)) -MMD
-LDFLAGS = $(LDFLAGS_$(sys))
+LDFLAGS = -L/usr/X11R6/lib $(LDFLAGS_$(sys))
 
 $(bin): $(obj)
 	$(CC) -o $@ $(obj) $(LDFLAGS)

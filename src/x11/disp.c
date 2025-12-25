@@ -5,6 +5,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
 #include <X11/Xutil.h>
 #ifndef NO_XSHM
 #include <X11/extensions/XShm.h>
