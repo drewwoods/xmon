@@ -9,8 +9,16 @@ static int calc_shift(unsigned int pgsz);
 
 int mem_init(void)
 {
-	unsigned int pgsz, num;
+	unsigned int i, pgsz, pgtotal, num;
 	size_t len;
+	static const char *statname[] = {
+		"vm.stats.vm.v_active_count",
+		"vm.stats.vm.v_inactive_count",
+		"vm.stats.vm.v_wire_count",
+		"vm.stats.vm.v_cache_count",
+		"vm.stats.vm.v_free_count",
+		0
+	};
 
 	len = sizeof pgsz;
 	if(sysctlbyname("vm.stats.vm.v_page_size", &pgsz, &len, 0, 0) == -1 || !pgsz) {
@@ -19,12 +27,14 @@ int mem_init(void)
 	}
 	shift = calc_shift(pgsz);
 
-	len = sizeof num;
-	if(sysctlbyname("vm.stats.vm.v_page_count", &num, &len, 0, 0) == -1) {
-		fprintf(stderr, "failed to get total memory size\n");
-		return -1;
+	pgtotal = 0;
+	for(i=0; statname[i]; i++) {
+		len = sizeof num;
+		if(sysctlbyname(statname[i], &num, &len, 0, 0) == 0) {
+			pgtotal += num;
+		}
 	}
-	smon.mem_total = num << shift;
+	smon.mem_total = pgtotal << shift;
 	return 0;
 }
 
