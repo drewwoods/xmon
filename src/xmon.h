@@ -29,7 +29,7 @@ struct sysmon {
 	int *cpu;		/* per CPU usage */
 	unsigned int num_cpus;
 
-	float loadavg[3];
+	unsigned int loadavg[3];		/* fixed point .10 */
 
 	unsigned long mem_total, mem_free;	/* in kb */
 	unsigned long net_rx, net_tx;		/* in bytes */

@@ -14,7 +14,7 @@ void load_update(void)
 		return;
 	}
 
-	smon.loadavg[0] = val[0];
-	smon.loadavg[1] = val[1];
-	smon.loadavg[2] = val[2];
+	smon.loadavg[0] = (unsigned int)(val[0] * 1024.0);
+	smon.loadavg[1] = (unsigned int)(val[1] * 1024.0);
+	smon.loadavg[2] = (unsigned int)(val[2] * 1024.0);
 }

@@ -33,18 +33,20 @@ void loadmon_draw(void)
 {
 	char buf[128];
 	int baseline, y, val;
+	unsigned int load;
 
 	baseline = rect.y + font.height - font.descent - 1;
 
 	set_color(uicolor[COL_BG]);
 	draw_rect(rect.x, rect.y, rect.width, font.height);
 
-	sprintf(buf, "LOAD %.2f", smon.loadavg[0]);
+	load = smon.loadavg[0] + 5;	/* +512/100 (0.005) for rounding the fraction */
+	sprintf(buf, "LOAD %u.%02u", load >> 10, ((load & 0x3ff) * 100) >> 10);
 
 	set_color(uicolor[COL_FG]);
 	draw_text(rect.x, baseline, buf);
 
 	y = baseline + font.descent + 1 + BEVEL;
-	val = (int)(smon.loadavg[0] * 1024.0);
+	val = smon.loadavg[0];
 	draw_bar(rect.x, y, rect.width, val, bar_max);
 }
