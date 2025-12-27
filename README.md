@@ -12,7 +12,7 @@ Xmon strives to:
   - Run well both locally and over the network on X11.
   - Be as configurable as possible.
 
-Currently xmon supports: Linux, IRIX, MacOS X, and Windows.
+Currently xmon supports: Linux, IRIX, FreeBSD, MacOS X, and Windows.
 
 
 History
@@ -62,6 +62,11 @@ changed by modifying the first line of `Makefile.sgi`.
 To build with gcc and GNU make, run `gmake CC=gcc`, then `gmake install` to
 install. Again, to change the installation prefix, edit the first line of
 `GNUmakefile`.
+
+### FreeBSD
+
+On FreeBSD GNU make is required. Type `gmake` to build, `gmake install` to
+install. See the GNU/Linux instructions about the installation prefix.
 
 ### MacOS X
 
